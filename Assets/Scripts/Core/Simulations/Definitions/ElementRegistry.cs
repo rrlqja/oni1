@@ -1,57 +1,81 @@
 using System;
-using System.Collections.Generic;
-using Core.Simulation.Data;
+using UnityEngine;
 
 namespace Core.Simulation.Definitions
 {
     public sealed class ElementRegistry
     {
-        private readonly Dictionary<byte, ElementDefinition> _byId = new();
+        private const int MaxElementCount = 256;
 
-        public ElementRegistry()
+        private readonly ElementRuntimeDefinition[] _definitions = new ElementRuntimeDefinition[MaxElementCount];
+        private readonly bool[] _isRegistered = new bool[MaxElementCount];
+
+        public ElementRegistry(ElementDatabaseSO database)
         {
-            Register(new ElementDefinition(
-                id: 0,
-                name: "Vacuum",
-                behaviorType: ElementBehaviorType.Vacuum,
-                displacementPriority: DisplacementPriority.Vacuum,
-                defaultMass: 0,
-                maxMass: 0,
-                isSolid: false));
+            if (database == null)
+                throw new ArgumentNullException(nameof(database));
 
-            Register(new ElementDefinition(
-                id: 1,
-                name: "Wall",
-                behaviorType: ElementBehaviorType.StaticSolid,
-                displacementPriority: DisplacementPriority.StaticSolid,
-                defaultMass: 1000,
-                maxMass: 1000,
-                isSolid: true));
-
-            Register(new ElementDefinition(
-                id: 2,
-                name: "Sand",
-                behaviorType: ElementBehaviorType.FallingSolid,
-                displacementPriority: DisplacementPriority.FallingSolid,
-                defaultMass: 1000,
-                maxMass: 1000,
-                isSolid: true));
+            Build(database);
         }
 
-        public void Register(ElementDefinition definition)
+        private void Build(ElementDatabaseSO database)
         {
-            if (definition == null)
-                throw new ArgumentNullException(nameof(definition));
+            var elements = database.Elements;
 
-            _byId[definition.Id] = definition;
+            for (int i = 0; i < elements.Count; i++)
+            {
+                ElementDefinitionSO source = elements[i];
+
+                if (source == null)
+                {
+                    Debug.LogWarning($"ElementDatabase '{database.name}' contains a null element entry.", database);
+                    continue;
+                }
+
+                byte id = source.Id;
+
+                if (_isRegistered[id])
+                {
+                    throw new InvalidOperationException(
+                        $"Duplicate element id detected while building registry. id={id}, element='{source.ElementName}'");
+                }
+
+                _definitions[id] = source.ToRuntimeDefinition();
+                _isRegistered[id] = true;
+            }
+
+            if (!_isRegistered[0])
+            {
+                throw new InvalidOperationException(
+                    "Element id 0 must be reserved for Vacuum and must exist in the ElementDatabase.");
+            }
         }
 
-        public ElementDefinition Get(byte id)
+        public bool IsRegistered(byte id)
         {
-            if (!_byId.TryGetValue(id, out var definition))
-                throw new InvalidOperationException($"ElementDefinition not found. id={id}");
+            return _isRegistered[id];
+        }
 
-            return definition;
+        public ref readonly ElementRuntimeDefinition Get(byte id)
+        {
+            if (!_isRegistered[id])
+                throw new InvalidOperationException($"ElementRuntimeDefinition not found. id={id}");
+
+            return ref _definitions[id];
+        }
+
+        public byte RequireId(string elementName)
+        {
+            for (int i = 0; i < _definitions.Length; i++)
+            {
+                if (!_isRegistered[i])
+                    continue;
+
+                if (string.Equals(_definitions[i].Name, elementName, StringComparison.Ordinal))
+                    return (byte)i;
+            }
+
+            throw new InvalidOperationException($"Element '{elementName}' was not found in registry.");
         }
     }
 }

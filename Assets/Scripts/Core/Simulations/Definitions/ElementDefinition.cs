@@ -1,25 +1,28 @@
+using UnityEngine;
 using Core.Simulation.Data;
 
 namespace Core.Simulation.Definitions
 {
-    public sealed class ElementDefinition
+    public readonly struct ElementRuntimeDefinition
     {
-        public byte Id { get; }
-        public string Name { get; }
-        public ElementBehaviorType BehaviorType { get; }
-        public DisplacementPriority DisplacementPriority { get; }
-        public int DefaultMass { get; }
-        public int MaxMass { get; }
-        public bool IsSolid { get; }
+        public readonly byte Id;
+        public readonly string Name;
+        public readonly ElementBehaviorType BehaviorType;
+        public readonly DisplacementPriority DisplacementPriority;
+        public readonly int DefaultMass;
+        public readonly int MaxMass;
+        public readonly bool IsSolid;
+        public readonly Color32 BaseColor;
 
-        public ElementDefinition(
+        public ElementRuntimeDefinition(
             byte id,
             string name,
             ElementBehaviorType behaviorType,
             DisplacementPriority displacementPriority,
             int defaultMass,
             int maxMass,
-            bool isSolid)
+            bool isSolid,
+            Color32 baseColor)
         {
             Id = id;
             Name = name;
@@ -28,6 +31,7 @@ namespace Core.Simulation.Definitions
             DefaultMass = defaultMass;
             MaxMass = maxMass;
             IsSolid = isSolid;
+            BaseColor = baseColor;
         }
     }
 }
