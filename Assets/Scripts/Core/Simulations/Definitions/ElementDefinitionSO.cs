@@ -17,6 +17,10 @@ namespace Core.Simulation.Definitions
         [SerializeField] private DisplacementPriority displacementPriority = DisplacementPriority.Vacuum;
         [SerializeField] private bool isSolid = false;
 
+        [Header("Physical")]
+        [Min(0f)]
+        [SerializeField] private float density = 0f;
+
         [Header("Mass")]
         [Min(0)]
         [SerializeField] private int defaultMass = 0;
@@ -32,6 +36,7 @@ namespace Core.Simulation.Definitions
         public ElementBehaviorType BehaviorType => behaviorType;
         public DisplacementPriority DisplacementPriority => displacementPriority;
         public bool IsSolid => isSolid;
+        public float Density => density;
         public int DefaultMass => defaultMass;
         public int MaxMass => maxMass;
         public Color32 BaseColor => baseColor;
@@ -43,6 +48,7 @@ namespace Core.Simulation.Definitions
                 name: elementName,
                 behaviorType: behaviorType,
                 displacementPriority: displacementPriority,
+                density: density,
                 defaultMass: defaultMass,
                 maxMass: maxMass,
                 isSolid: isSolid,
@@ -54,6 +60,9 @@ namespace Core.Simulation.Definitions
         {
             if (string.IsNullOrWhiteSpace(elementName))
                 elementName = name;
+
+            if (density < 0f)
+                density = 0f;
 
             if (maxMass < defaultMass)
                 maxMass = defaultMass;

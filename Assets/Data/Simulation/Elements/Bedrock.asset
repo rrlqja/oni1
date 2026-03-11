@@ -17,6 +17,7 @@ MonoBehaviour:
   behaviorType: 1
   displacementPriority: 4
   isSolid: 1
+  density: 9999
   defaultMass: 1000
   maxMass: 1000
   baseColor:

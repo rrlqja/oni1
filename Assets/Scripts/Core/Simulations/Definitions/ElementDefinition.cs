@@ -9,6 +9,7 @@ namespace Core.Simulation.Definitions
         public readonly string Name;
         public readonly ElementBehaviorType BehaviorType;
         public readonly DisplacementPriority DisplacementPriority;
+        public readonly float Density;
         public readonly int DefaultMass;
         public readonly int MaxMass;
         public readonly bool IsSolid;
@@ -19,6 +20,7 @@ namespace Core.Simulation.Definitions
             string name,
             ElementBehaviorType behaviorType,
             DisplacementPriority displacementPriority,
+            float density,
             int defaultMass,
             int maxMass,
             bool isSolid,
@@ -28,6 +30,7 @@ namespace Core.Simulation.Definitions
             Name = name;
             BehaviorType = behaviorType;
             DisplacementPriority = displacementPriority;
+            Density = density;
             DefaultMass = defaultMass;
             MaxMass = maxMass;
             IsSolid = isSolid;

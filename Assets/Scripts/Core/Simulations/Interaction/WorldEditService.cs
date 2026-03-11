@@ -103,7 +103,8 @@ namespace Core.Simulation.Interaction
 
             Debug.Log(
                 $"Cell ({x}, {y}) | Element={element.Name} | Id={cell.ElementId} | " +
-                $"Behavior={element.BehaviorType} | Mass={cell.Mass} | Temp={cell.Temperature} | Flags={cell.Flags}",
+                $"Behavior={element.BehaviorType} | Density={element.Density} | " +
+                $"Mass={cell.Mass} | Temp={cell.Temperature} | Flags={cell.Flags}",
                 this);
         }
 
