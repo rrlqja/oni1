@@ -54,17 +54,25 @@ namespace Core.Simulation.Runtime
                     if (!ElementInteractionRules.IsFallingSolid(actorElement))
                         continue;
 
-                    // 맨 아래는 더 내려갈 수 없음
                     int belowY = y - 1;
                     if (belowY < 0)
                         continue;
 
                     int toIndex = _grid.ToIndex(x, belowY);
+
+                    ref TickMeta toMeta = ref _grid.GetTickMetaRef(toIndex);
+                    if (toMeta.HasActedThisTick(currentTick))
+                        continue;
+
                     SimCell targetCell = _grid.GetCell(x, belowY);
                     ref readonly ElementRuntimeDefinition targetElement = ref _registry.Get(targetCell.ElementId);
 
                     DownInteractionResult interaction =
-                        ElementInteractionRules.EvaluateDownInteraction(actorElement, targetElement);
+                        ElementInteractionRules.EvaluateDownInteraction(
+                            actorCell,
+                            actorElement,
+                            targetCell,
+                            targetElement);
 
                     switch (interaction)
                     {
@@ -72,9 +80,12 @@ namespace Core.Simulation.Runtime
                             TryReserveMove(currentTick, fromIndex, toIndex);
                             break;
 
-                        case DownInteractionResult.Replace:
-                            // 다음 단계에서 Replace 구현 예정
-                            // 지금은 구조만 열어두고 실제로는 아무것도 하지 않음
+                        case DownInteractionResult.Swap:
+                            TryReserveSwap(currentTick, fromIndex, toIndex);
+                            break;
+
+                        case DownInteractionResult.Merge:
+                            TryReserveMergeMass(currentTick, fromIndex, toIndex);
                             break;
 
                         case DownInteractionResult.Blocked:
@@ -97,10 +108,33 @@ namespace Core.Simulation.Runtime
                 return;
 
             fromMeta.MarkActed(currentTick);
+            toMeta.MarkActed(currentTick);
+
             fromMeta.AddReservation(TickReservationMask.SourceReserved);
             toMeta.AddReservation(TickReservationMask.TargetReserved);
 
             _commands.Add(SimulationCommand.CreateMove(fromIndex, toIndex));
+        }
+
+        private void TryReserveSwap(int currentTick, int aIndex, int bIndex)
+        {
+            ref TickMeta aMeta = ref _grid.GetTickMetaRef(aIndex);
+            ref TickMeta bMeta = ref _grid.GetTickMetaRef(bIndex);
+
+            if (aMeta.ReservationMask != 0)
+                return;
+
+            if (bMeta.ReservationMask != 0)
+                return;
+
+            // Swap에 참여한 두 셀 모두 이번 틱 재행동 금지
+            aMeta.MarkActed(currentTick);
+            bMeta.MarkActed(currentTick);
+
+            aMeta.AddReservation(TickReservationMask.SourceReserved);
+            bMeta.AddReservation(TickReservationMask.TargetReserved);
+
+            _commands.Add(SimulationCommand.CreateSwap(aIndex, bIndex));
         }
 
         private void ApplyCommands()
@@ -122,8 +156,18 @@ namespace Core.Simulation.Runtime
                         ApplyMove(command, vacuumCell);
                         break;
 
-                    case SimulationCommandType.Replace:
-                        // 다음 단계
+                    case SimulationCommandType.Swap:
+                        ApplySwap(command);
+                        break;
+
+                    case SimulationCommandType.MergeMass:
+                        ApplyMergeMass(command, vacuumCell);
+                        break;
+
+                    case SimulationCommandType.FlowBatch:
+                    case SimulationCommandType.Transform:
+                    case SimulationCommandType.None:
+                    default:
                         break;
                 }
             }
@@ -136,6 +180,97 @@ namespace Core.Simulation.Runtime
 
             toCell = fromCell;
             fromCell = vacuumCell;
+        }
+
+        private void ApplySwap(SimulationCommand command)
+        {
+            // TickMeta는 교환하지 않고 SimCell payload만 교환
+            ref SimCell aCell = ref _grid.GetCellRef(command.FromIndex);
+            ref SimCell bCell = ref _grid.GetCellRef(command.ToIndex);
+
+            SimCell temp = aCell;
+            aCell = bCell;
+            bCell = temp;
+        }
+
+        private void ApplyMergeMass(SimulationCommand command, SimCell vacuumCell)
+        {
+            ref SimCell sourceCell = ref _grid.GetCellRef(command.FromIndex);
+            ref SimCell targetCell = ref _grid.GetCellRef(command.ToIndex);
+
+            if (sourceCell.ElementId != targetCell.ElementId)
+                return;
+
+            ref readonly ElementRuntimeDefinition element = ref _registry.Get(targetCell.ElementId);
+
+            int targetCapacity = element.MaxMass - targetCell.Mass;
+            if (targetCapacity <= 0)
+                return;
+
+            int transferMass = Math.Min(sourceCell.Mass, targetCapacity);
+            if (transferMass <= 0)
+                return;
+
+            int sourceMassBefore = sourceCell.Mass;
+            int targetMassBefore = targetCell.Mass;
+
+            short mergedTemperature = ComputeMassWeightedTemperature(
+                sourceCell.Temperature,
+                sourceMassBefore,
+                targetCell.Temperature,
+                targetMassBefore,
+                transferMass);
+
+            targetCell.Mass += transferMass;
+            targetCell.Temperature = mergedTemperature;
+
+            sourceCell.Mass -= transferMass;
+
+            if (sourceCell.Mass <= 0)
+            {
+                sourceCell = vacuumCell;
+            }
+        }
+
+        private void TryReserveMergeMass(int currentTick, int sourceIndex, int targetIndex)
+        {
+            ref TickMeta sourceMeta = ref _grid.GetTickMetaRef(sourceIndex);
+            ref TickMeta targetMeta = ref _grid.GetTickMetaRef(targetIndex);
+
+            if (sourceMeta.ReservationMask != 0)
+                return;
+
+            if (targetMeta.ReservationMask != 0)
+                return;
+
+            sourceMeta.MarkActed(currentTick);
+            targetMeta.MarkActed(currentTick);
+
+            sourceMeta.AddReservation(TickReservationMask.SourceReserved);
+            targetMeta.AddReservation(TickReservationMask.TargetReserved);
+
+            _commands.Add(SimulationCommand.CreateMergeMass(sourceIndex, targetIndex));
+        }
+
+        private static short ComputeMassWeightedTemperature(
+            short sourceTemperature,
+            int sourceMassBefore,
+            short targetTemperature,
+            int targetMassBefore,
+            int transferredMass)
+        {
+            if (transferredMass <= 0)
+                return targetTemperature;
+
+            long weightedSource = (long)sourceTemperature * transferredMass;
+            long weightedTarget = (long)targetTemperature * targetMassBefore;
+
+            long totalMass = targetMassBefore + transferredMass;
+            if (totalMass <= 0)
+                return targetTemperature;
+
+            long result = (weightedSource + weightedTarget) / totalMass;
+            return (short)result;
         }
     }
 }

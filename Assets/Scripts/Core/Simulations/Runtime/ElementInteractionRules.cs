@@ -11,17 +11,26 @@ namespace Core.Simulation.Runtime
         }
 
         public static DownInteractionResult EvaluateDownInteraction(
-            in ElementRuntimeDefinition actor,
-            in ElementRuntimeDefinition target)
+            in SimCell actorCell,
+            in ElementRuntimeDefinition actorElement,
+            in SimCell targetCell,
+            in ElementRuntimeDefinition targetElement)
         {
-            // 완전 빈칸이면 그냥 이동
-            if (target.Id == BuiltInElementIds.Vacuum)
+            if (targetElement.BehaviorType == ElementBehaviorType.Vacuum)
                 return DownInteractionResult.Move;
 
-            // 더 낮은 치환 우선순위라면 아래 칸으로 진입 가능한 후보
-            // 예: FallingSolid(3) -> Liquid(2), Gas(1)
-            if (target.DisplacementPriority < actor.DisplacementPriority)
-                return DownInteractionResult.Replace;
+            if (targetElement.BehaviorType == ElementBehaviorType.Gas ||
+                targetElement.BehaviorType == ElementBehaviorType.Liquid)
+            {
+                return DownInteractionResult.Swap;
+            }
+
+            if (targetElement.BehaviorType == ElementBehaviorType.FallingSolid &&
+                actorCell.ElementId == targetCell.ElementId &&
+                targetCell.Mass < targetElement.MaxMass)
+            {
+                return DownInteractionResult.Merge;
+            }
 
             return DownInteractionResult.Blocked;
         }

@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f940cf47b8ee452f9ca920f42f0b852, type: 3}
-  m_Name: Sand
+  m_Name: Water
   m_EditorClassIdentifier: 
-  id: 2
-  elementName: "\uBAA8\uB798"
-  behaviorType: 2
-  displacementPriority: 3
-  isSolid: 1
-  density: 1500
-  defaultMass: 1500
-  maxMass: 2000
+  id: 4
+  elementName: "\uBB3C"
+  behaviorType: 3
+  displacementPriority: 2
+  isSolid: 0
+  density: 1000
+  defaultMass: 1000
+  maxMass: 1000
   baseColor:
     serializedVersion: 2
-    rgba: 4290888916
+    rgba: 4294941315

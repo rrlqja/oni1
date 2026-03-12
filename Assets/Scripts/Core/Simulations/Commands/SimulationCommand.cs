@@ -1,10 +1,15 @@
+using Core.Simulation.Data;
+
 namespace Core.Simulation.Commands
 {
     public enum SimulationCommandType : byte
     {
         None = 0,
         Move = 1,
-        Replace = 2
+        Swap = 2,
+        MergeMass = 3,
+        FlowBatch = 4,
+        Transform = 5
     }
 
     public readonly struct SimulationCommand
@@ -12,18 +17,15 @@ namespace Core.Simulation.Commands
         public readonly SimulationCommandType Type;
         public readonly int FromIndex;
         public readonly int ToIndex;
-        public readonly int DisplacedToIndex;
 
         private SimulationCommand(
             SimulationCommandType type,
             int fromIndex,
-            int toIndex,
-            int displacedToIndex)
+            int toIndex)
         {
             Type = type;
             FromIndex = fromIndex;
             ToIndex = toIndex;
-            DisplacedToIndex = displacedToIndex;
         }
 
         public static SimulationCommand CreateMove(int fromIndex, int toIndex)
@@ -31,17 +33,23 @@ namespace Core.Simulation.Commands
             return new SimulationCommand(
                 SimulationCommandType.Move,
                 fromIndex,
-                toIndex,
-                -1);
+                toIndex);
         }
 
-        public static SimulationCommand CreateReplace(int fromIndex, int toIndex, int displacedToIndex)
+        public static SimulationCommand CreateSwap(int fromIndex, int toIndex)
         {
             return new SimulationCommand(
-                SimulationCommandType.Replace,
+                SimulationCommandType.Swap,
                 fromIndex,
-                toIndex,
-                displacedToIndex);
+                toIndex);
+        }
+
+        public static SimulationCommand CreateMergeMass(int fromIndex, int toIndex)
+        {
+            return new SimulationCommand(
+                SimulationCommandType.MergeMass,
+                fromIndex,
+                toIndex);
         }
     }
 }

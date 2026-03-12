@@ -4,6 +4,7 @@ namespace Core.Simulation.Runtime
     {
         Blocked = 0,
         Move = 1,
-        Replace = 2
+        Swap = 2,
+        Merge = 3
     }
 }

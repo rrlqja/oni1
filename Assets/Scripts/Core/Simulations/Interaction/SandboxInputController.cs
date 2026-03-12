@@ -66,6 +66,12 @@ namespace Core.Simulation.Interaction
 
             if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
                 worldEditService.SetSelectedElement(BuiltInElementIds.Sand);
+
+            if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
+                worldEditService.SetSelectedElement(BuiltInElementIds.Oxygen);
+
+            if (Input.GetKeyDown(KeyCode.Alpha5) || Input.GetKeyDown(KeyCode.Keypad5))
+                worldEditService.SetSelectedElement(BuiltInElementIds.Water);
         }
 
         private void HandleMousePainting(int x, int y)
