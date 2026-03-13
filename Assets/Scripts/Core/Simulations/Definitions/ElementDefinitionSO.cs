@@ -28,8 +28,21 @@ namespace Core.Simulation.Definitions
         [Min(0)]
         [SerializeField] private int maxMass = 0;
 
+        [Header("Flow")]
+        [Min(1)]
+        [SerializeField] private int viscosity = 1;
+
+        [Min(0)]
+        [SerializeField] private int minSpreadMass = 0;
+
         [Header("Rendering")]
         [SerializeField] private Color32 baseColor = new Color32(255, 255, 255, 255);
+
+        [Header("Liquid Flow")]
+        [Min(0)]
+        [SerializeField] private int lateralRetainMass = 0;
+
+        public int LateralRetainMass => lateralRetainMass;
 
         public byte Id => id;
         public string ElementName => elementName;
@@ -39,6 +52,8 @@ namespace Core.Simulation.Definitions
         public float Density => density;
         public int DefaultMass => defaultMass;
         public int MaxMass => maxMass;
+        public int Viscosity => viscosity;
+        public int MinSpreadMass => minSpreadMass;
         public Color32 BaseColor => baseColor;
 
         public ElementRuntimeDefinition ToRuntimeDefinition()
@@ -51,11 +66,39 @@ namespace Core.Simulation.Definitions
                 density: density,
                 defaultMass: defaultMass,
                 maxMass: maxMass,
+                viscosity: viscosity,
+                minSpreadMass: minSpreadMass,
                 isSolid: isSolid,
-                baseColor: baseColor);
+                baseColor: baseColor,
+                lateralRetainMass: lateralRetainMass);
         }
 
 #if UNITY_EDITOR
+        public void SetValuesForTests(
+            byte id,
+            string elementName,
+            ElementBehaviorType behaviorType,
+            DisplacementPriority displacementPriority,
+            float density,
+            int defaultMass,
+            int maxMass,
+            int viscosity,
+            int minSpreadMass,
+            bool isSolid,
+            Color32 baseColor)
+        {
+            this.id = id;
+            this.elementName = elementName;
+            this.behaviorType = behaviorType;
+            this.displacementPriority = displacementPriority;
+            this.density = density;
+            this.defaultMass = defaultMass;
+            this.maxMass = maxMass;
+            this.viscosity = viscosity;
+            this.minSpreadMass = minSpreadMass;
+            this.isSolid = isSolid;
+            this.baseColor = baseColor;
+        }
         private void OnValidate()
         {
             if (string.IsNullOrWhiteSpace(elementName))
@@ -63,6 +106,12 @@ namespace Core.Simulation.Definitions
 
             if (density < 0f)
                 density = 0f;
+
+            if (viscosity < 1)
+                viscosity = 1;
+
+            if (minSpreadMass < 0)
+                minSpreadMass = 0;
 
             if (maxMass < defaultMass)
                 maxMass = defaultMass;

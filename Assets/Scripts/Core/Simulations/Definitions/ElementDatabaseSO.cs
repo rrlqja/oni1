@@ -32,6 +32,22 @@ namespace Core.Simulation.Definitions
         }
 
 #if UNITY_EDITOR
+        public void SetDefinitionsForTests(IEnumerable<ElementDefinitionSO> definitions)
+        {
+            elements.Clear();
+
+            if (definitions == null)
+                return;
+
+            foreach (ElementDefinitionSO definition in definitions)
+            {
+                if (definition == null)
+                    continue;
+
+                elements.Add(definition);
+            }
+        }
+
         private void OnValidate()
         {
             var seenIds = new HashSet<byte>();

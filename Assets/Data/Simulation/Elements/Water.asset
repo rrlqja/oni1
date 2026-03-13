@@ -18,8 +18,11 @@ MonoBehaviour:
   displacementPriority: 2
   isSolid: 0
   density: 1000
-  defaultMass: 1000
-  maxMass: 1000
+  defaultMass: 1000000
+  maxMass: 1000000
+  viscosity: 10
+  minSpreadMass: 10000
   baseColor:
     serializedVersion: 2
     rgba: 4294941315
+  lateralRetainMass: 300

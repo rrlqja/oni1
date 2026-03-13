@@ -12,8 +12,11 @@ namespace Core.Simulation.Definitions
         public readonly float Density;
         public readonly int DefaultMass;
         public readonly int MaxMass;
+        public readonly int Viscosity;
+        public readonly int MinSpreadMass;
         public readonly bool IsSolid;
         public readonly Color32 BaseColor;
+        public readonly int LateralRetainMass;
 
         public ElementRuntimeDefinition(
             byte id,
@@ -23,8 +26,11 @@ namespace Core.Simulation.Definitions
             float density,
             int defaultMass,
             int maxMass,
+            int viscosity,
+            int minSpreadMass,
             bool isSolid,
-            Color32 baseColor)
+            Color32 baseColor,
+            int lateralRetainMass)
         {
             Id = id;
             Name = name;
@@ -33,8 +39,11 @@ namespace Core.Simulation.Definitions
             Density = density;
             DefaultMass = defaultMass;
             MaxMass = maxMass;
+            Viscosity = viscosity;
+            MinSpreadMass = minSpreadMass;
             IsSolid = isSolid;
             BaseColor = baseColor;
+            LateralRetainMass = lateralRetainMass;
         }
     }
 }

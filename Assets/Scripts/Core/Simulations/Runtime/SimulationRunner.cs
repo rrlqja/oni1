@@ -11,22 +11,38 @@ namespace Core.Simulation.Runtime
         private readonly WorldGrid _grid;
         private readonly ElementRegistry _registry;
         private readonly List<SimulationCommand> _commands = new(256);
+        private readonly List<FlowBatchCommand> _flowCommands = new(256);
+
+        private readonly LiquidFlowPlanner _liquidFlowPlanner;
+        private readonly FlowBatchApplier _flowBatchApplier;
 
         public SimulationRunner(WorldGrid grid, ElementRegistry registry)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+
+            _liquidFlowPlanner = new LiquidFlowPlanner(_grid, _registry);
+            _flowBatchApplier = new FlowBatchApplier(_grid, _registry);
         }
 
         public void Step(int currentTick)
         {
             _commands.Clear();
+            _flowCommands.Clear();
             _grid.ClearAllTickReservations();
 
             bool leftToRight = (currentTick & 1) == 0;
 
+            // 1) FallingSolid phase
             ScanAndCreateCommands(currentTick, leftToRight);
             ApplyCommands();
+
+            // phase 전환: acted는 유지, reservation만 초기화
+            _grid.ClearAllTickReservations();
+
+            // 2) Liquid phase (FlowBatch.Normal 최소 구현)
+            _liquidFlowPlanner.BuildNormalFlowBatches(currentTick, leftToRight, _flowCommands);
+            _flowBatchApplier.Apply(_flowCommands);
 
             _grid.ClearAllTickReservations();
         }
@@ -127,7 +143,6 @@ namespace Core.Simulation.Runtime
             if (bMeta.ReservationMask != 0)
                 return;
 
-            // Swap에 참여한 두 셀 모두 이번 틱 재행동 금지
             aMeta.MarkActed(currentTick);
             bMeta.MarkActed(currentTick);
 
@@ -135,6 +150,26 @@ namespace Core.Simulation.Runtime
             bMeta.AddReservation(TickReservationMask.TargetReserved);
 
             _commands.Add(SimulationCommand.CreateSwap(aIndex, bIndex));
+        }
+
+        private void TryReserveMergeMass(int currentTick, int sourceIndex, int targetIndex)
+        {
+            ref TickMeta sourceMeta = ref _grid.GetTickMetaRef(sourceIndex);
+            ref TickMeta targetMeta = ref _grid.GetTickMetaRef(targetIndex);
+
+            if (sourceMeta.ReservationMask != 0)
+                return;
+
+            if (targetMeta.ReservationMask != 0)
+                return;
+
+            sourceMeta.MarkActed(currentTick);
+            targetMeta.MarkActed(currentTick);
+
+            sourceMeta.AddReservation(TickReservationMask.SourceReserved);
+            targetMeta.AddReservation(TickReservationMask.TargetReserved);
+
+            _commands.Add(SimulationCommand.CreateMergeMass(sourceIndex, targetIndex));
         }
 
         private void ApplyCommands()
@@ -184,7 +219,6 @@ namespace Core.Simulation.Runtime
 
         private void ApplySwap(SimulationCommand command)
         {
-            // TickMeta는 교환하지 않고 SimCell payload만 교환
             ref SimCell aCell = ref _grid.GetCellRef(command.FromIndex);
             ref SimCell bCell = ref _grid.GetCellRef(command.ToIndex);
 
@@ -230,26 +264,6 @@ namespace Core.Simulation.Runtime
             {
                 sourceCell = vacuumCell;
             }
-        }
-
-        private void TryReserveMergeMass(int currentTick, int sourceIndex, int targetIndex)
-        {
-            ref TickMeta sourceMeta = ref _grid.GetTickMetaRef(sourceIndex);
-            ref TickMeta targetMeta = ref _grid.GetTickMetaRef(targetIndex);
-
-            if (sourceMeta.ReservationMask != 0)
-                return;
-
-            if (targetMeta.ReservationMask != 0)
-                return;
-
-            sourceMeta.MarkActed(currentTick);
-            targetMeta.MarkActed(currentTick);
-
-            sourceMeta.AddReservation(TickReservationMask.SourceReserved);
-            targetMeta.AddReservation(TickReservationMask.TargetReserved);
-
-            _commands.Add(SimulationCommand.CreateMergeMass(sourceIndex, targetIndex));
         }
 
         private static short ComputeMassWeightedTemperature(
