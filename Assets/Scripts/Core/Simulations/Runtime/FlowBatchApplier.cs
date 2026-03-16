@@ -30,10 +30,12 @@ namespace Core.Simulation.Runtime
             _flowTouched = new bool[_grid.Length];
         }
 
-        public void Apply(IReadOnlyList<FlowBatchCommand> flowCommands)
+        public void Apply(IReadOnlyList<FlowBatchCommand> flowCommands, FlowBatchApplyReport report = null)
         {
             if (flowCommands == null)
                 throw new ArgumentNullException(nameof(flowCommands));
+
+            report?.Clear();
 
             if (flowCommands.Count == 0)
                 return;
@@ -41,17 +43,15 @@ namespace Core.Simulation.Runtime
             for (int i = 0; i < flowCommands.Count; i++)
             {
                 FlowBatchCommand batch = flowCommands[i];
-                ApplyBatch(batch);
+                ApplyBatch(batch, report);
             }
 
             ApplyTouchedFlowCells();
             ClearFlowAccumulators();
         }
 
-        private void ApplyBatch(in FlowBatchCommand batch)
+        private void ApplyBatch(in FlowBatchCommand batch, FlowBatchApplyReport report)
         {
-            SimCell sourceSnapshot = _grid.GetCellByIndex(batch.SourceIndex);
-
             for (int t = 0; t < batch.TransferCount; t++)
             {
                 FlowTransferPlan transfer = batch.GetTransfer(t);
@@ -62,9 +62,9 @@ namespace Core.Simulation.Runtime
                 SimCell targetSnapshot = _grid.GetCellRef(targetIndex);
 
                 int targetCurrentMass = targetSnapshot.Mass + _flowIncomingMass[targetIndex];
-                int targetCapacity = Math.Max(0, _registry.Get(batch.ElementId).MaxMass - targetCurrentMass);
+                int targetCapacity = System.Math.Max(0, _registry.Get(batch.ElementId).MaxMass - targetCurrentMass);
 
-                int acceptedMass = Math.Min(transfer.PlannedMass, targetCapacity);
+                int acceptedMass = System.Math.Min(transfer.PlannedMass, targetCapacity);
                 if (acceptedMass <= 0)
                     continue;
 
@@ -74,6 +74,8 @@ namespace Core.Simulation.Runtime
 
                 if (_flowIncomingElementId[targetIndex] == 0)
                     _flowIncomingElementId[targetIndex] = batch.ElementId;
+
+                report?.Add(batch.SourceIndex, targetIndex, batch.ElementId, acceptedMass);
 
                 MarkFlowTouched(batch.SourceIndex);
                 MarkFlowTouched(targetIndex);
