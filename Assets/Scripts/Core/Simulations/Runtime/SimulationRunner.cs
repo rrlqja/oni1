@@ -16,8 +16,6 @@ namespace Core.Simulation.Runtime
         private readonly LiquidFlowPlanner _liquidFlowPlanner;
         private readonly FlowBatchApplier _flowBatchApplier;
 
-        private readonly GasFlowPlanner _gasFlowPlanner;
-
         public SimulationRunner(WorldGrid grid, ElementRegistry registry)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
@@ -25,8 +23,6 @@ namespace Core.Simulation.Runtime
 
             _liquidFlowPlanner = new LiquidFlowPlanner(_grid, _registry);
             _flowBatchApplier = new FlowBatchApplier(_grid, _registry);
-
-            _gasFlowPlanner = new GasFlowPlanner(_grid, _registry);
         }
 
         public void Step(int currentTick)
@@ -41,18 +37,11 @@ namespace Core.Simulation.Runtime
             ScanAndCreateCommands(currentTick, leftToRight);
             ApplyCommands();
 
+            // phase 전환: acted는 유지, reservation만 초기화
             _grid.ClearAllTickReservations();
 
-            // 2) Liquid phase
-            _flowCommands.Clear();
+            // 2) Liquid phase (FlowBatch.Normal 최소 구현)
             _liquidFlowPlanner.BuildNormalFlowBatches(currentTick, leftToRight, _flowCommands);
-            _flowBatchApplier.Apply(_flowCommands);
-
-            _grid.ClearAllTickReservations();
-
-            // 3) Gas phase
-            _flowCommands.Clear();
-            _gasFlowPlanner.BuildNormalFlowBatches(currentTick, leftToRight, _flowCommands);
             _flowBatchApplier.Apply(_flowCommands);
 
             _grid.ClearAllTickReservations();
