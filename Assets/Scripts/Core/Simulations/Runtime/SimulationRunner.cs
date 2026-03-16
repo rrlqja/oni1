@@ -50,10 +50,23 @@ namespace Core.Simulation.Runtime
 
             _grid.ClearAllTickReservations();
 
-            // 3) Gas phase
+            // 3) Gas phase A — 균등화 (같은 가스끼리 질량 분배)
             _flowCommands.Clear();
             _gasFlowPlanner.BuildNormalFlowBatches(currentTick, leftToRight, _flowCommands);
             _flowBatchApplier.Apply(_flowCommands);
+
+            _grid.ClearAllTickReservations();
+
+            // 4) Gas phase B — 밀도 인지 이동 (진공 drift + 이종 가스 swap)
+            _flowCommands.Clear();
+            _commands.Clear();
+            _gasFlowPlanner.BuildDensityAwareMovement(
+                currentTick, leftToRight, _flowCommands, _commands);
+
+            // drift (진공 이동)는 FlowBatchApplier로
+            _flowBatchApplier.Apply(_flowCommands);
+            // swap (이종 가스 교환)는 ApplyCommands로
+            ApplyCommands();
 
             _grid.ClearAllTickReservations();
         }

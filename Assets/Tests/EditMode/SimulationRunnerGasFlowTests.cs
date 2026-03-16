@@ -1,4 +1,4 @@
-using Core.Simulation.Data;
+ï»¿using Core.Simulation.Data;
 using Core.Simulation.Definitions;
 using Core.Simulation.Runtime;
 using NUnit.Framework;
@@ -42,7 +42,7 @@ namespace Tests.EditMode
             Assert.That(center.ElementId, Is.EqualTo(OxygenId));
             Assert.That(center.Mass, Is.GreaterThan(0));
 
-            // ÃÖ¼ÒÇÑ ÇÑ Ä­ ÀÌ»ó ÁÖº¯¿¡ ÆÛÁ³´ÂÁö È®ÀÎ
+            // ìµœì†Œí•œ í•œ ì¹¸ ì´ìƒ ì£¼ë³€ì— í¼ì¡ŒëŠ”ì§€ í™•ì¸
             int spreadCellCount = CountElementCells(OxygenId);
             Assert.That(spreadCellCount, Is.GreaterThanOrEqualTo(2));
         }
@@ -70,14 +70,14 @@ namespace Tests.EditMode
         [Test]
         public void Oxygen_Retains_More_Center_Mass_When_One_Direction_Is_Blocked()
         {
-            // ¿­¸° °ø°£
+            // ì—´ë¦° ê³µê°„
             SetCell(3, 3, OxygenId, 1_000);
             _runner.Step(1);
             int centerMassOpen = GetElementMassOrZero(3, 3, OxygenId);
 
             TearDownAndReset();
 
-            // ¾Æ·¡¸¦ ¸·Àº °ø°£
+            // ì•„ë˜ë¥¼ ë§‰ì€ ê³µê°„
             SetCell(3, 3, OxygenId, 1_000);
             SetCell(3, 2, BedrockId, 0);
 
@@ -105,7 +105,7 @@ namespace Tests.EditMode
             SetCell(3, 3, OxygenId, 1_000);
             SetCell(3, 4, WaterId, 1_000_000);
 
-            // Water°¡ Liquid phase¿¡¼­ ÁÂ¿ì·Î ÆÛÁöÁö ¸øÇÏ°Ô ¸·´Â´Ù
+            // Waterê°€ Liquid phaseì—ì„œ ì¢Œìš°ë¡œ í¼ì§€ì§€ ëª»í•˜ê²Œ ë§‰ëŠ”ë‹¤
             SetCell(2, 4, BedrockId, 0);
             SetCell(4, 4, BedrockId, 0);
 
@@ -120,7 +120,7 @@ namespace Tests.EditMode
         [Test]
         public void Oxygen_NormalFlow_Can_Spread_Into_Same_Oxygen_Cell()
         {
-            // Áß½É 1000, À§ÂÊ °°Àº »ê¼Ò 200
+            // ì¤‘ì‹¬ 1000, ìœ„ìª½ ê°™ì€ ì‚°ì†Œ 200
             SetCell(3, 3, OxygenId, 1_000);
             SetCell(3, 4, OxygenId, 200);
 
@@ -129,7 +129,7 @@ namespace Tests.EditMode
             int totalOxygenMass = SumMassOfElement(OxygenId);
             Assert.That(totalOxygenMass, Is.EqualTo(1_200));
 
-            // À§ÂÊ ¼¿Àº »ê¼Ò¸¦ À¯ÁöÇÏ¸ç Áú·®ÀÌ Áõ°¡ÇÒ ¼ö ÀÖÀ½
+            // ìœ„ìª½ ì…€ì€ ì‚°ì†Œë¥¼ ìœ ì§€í•˜ë©° ì§ˆëŸ‰ì´ ì¦ê°€í•  ìˆ˜ ìˆìŒ
             int upMass = GetElementMassOrZero(3, 4, OxygenId);
             Assert.That(upMass, Is.GreaterThanOrEqualTo(200));
         }
