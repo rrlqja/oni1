@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Core.Simulation.Definitions;
 using Core.Simulation.Rendering;
 using UnityEngine;
@@ -26,6 +26,8 @@ namespace Core.Simulation.Runtime
         [SerializeField] private float ticksPerSecond = 10f;
 
         [SerializeField] private bool startPaused = true;
+
+        private const int MAX_CATCHUP_TICKS = 5;
 
         private SimulationRunner _simulationRunner;
 
@@ -120,10 +122,21 @@ namespace Core.Simulation.Runtime
             float tickInterval = 1f / ticksPerSecond;
             _tickAccumulator += deltaTime;
 
+            int ticksThisFrame = 0;
+
             while (_tickAccumulator >= tickInterval)
             {
                 _tickAccumulator -= tickInterval;
+
+                if (ticksThisFrame >= MAX_CATCHUP_TICKS)
+                {
+                    // 남은 시간을 버려서 악순환 방지
+                    _tickAccumulator = 0f;
+                    break;
+                }
+
                 StepOneTickInternal();
+                ticksThisFrame++;
             }
         }
 

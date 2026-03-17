@@ -417,33 +417,27 @@ namespace Core.Simulation.Runtime
             if (sourceExcess <= 0)
                 return false;
 
-            // ── 밀도 기반 방향 차단 (이진 판정) ──
-            // 상하: 이진 차단 — 무거우면 아래만, 가벼우면 위만. 역방향 완전 차단.
-            // 좌우: 허용 — 같은 가스끼리 옆으로 균등화.
-            bool isHeavy = sourceElement.Density >= DENSITY_THRESHOLD;
-
-            float wHorizontal = 1f;
-            float wUp = isHeavy ? 0f : 1f;
-            float wDown = isHeavy ? 1f : 0f;
+            // ── 균등화는 방향 중립 ──
+            // 같은 가스 또는 진공만 대상이므로 밀도 분리에 영향 없음.
+            // 모든 방향으로 균등하게 확산해야 자연스러운 퍼짐이 가능.
+            // (밀도 방향 제어는 Phase B에서만 처리)
+            float w = 1f;
 
             FlowTransferPlan t0 = default, t1 = default, t2 = default, t3 = default;
             byte transferCount = 0;
             int totalPlanned = 0;
 
-            // n0, n1 = 좌우 — 항상 허용
             PlanWeightedTransfer(n0Idx, n0Mass, average, maxMass,
-                sourceExcess, wHorizontal, ref totalPlanned, ref transferCount,
+                sourceExcess, w, ref totalPlanned, ref transferCount,
                 ref t0, ref t1, ref t2, ref t3);
             PlanWeightedTransfer(n1Idx, n1Mass, average, maxMass,
-                sourceExcess, wHorizontal, ref totalPlanned, ref transferCount,
+                sourceExcess, w, ref totalPlanned, ref transferCount,
                 ref t0, ref t1, ref t2, ref t3);
-            // n2 = 위 (y+1) — 가벼운 가스만
             PlanWeightedTransfer(n2Idx, n2Mass, average, maxMass,
-                sourceExcess, wUp, ref totalPlanned, ref transferCount,
+                sourceExcess, w, ref totalPlanned, ref transferCount,
                 ref t0, ref t1, ref t2, ref t3);
-            // n3 = 아래 (y-1) — 무거운 가스만
             PlanWeightedTransfer(n3Idx, n3Mass, average, maxMass,
-                sourceExcess, wDown, ref totalPlanned, ref transferCount,
+                sourceExcess, w, ref totalPlanned, ref transferCount,
                 ref t0, ref t1, ref t2, ref t3);
 
             if (transferCount == 0)
