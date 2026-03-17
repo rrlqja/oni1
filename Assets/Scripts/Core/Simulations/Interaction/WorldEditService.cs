@@ -64,24 +64,27 @@ namespace Core.Simulation.Interaction
 
         public bool SetCell(int x, int y, byte elementId)
         {
-            if (!IsReady())
-                return false;
-
-            if (!simulationWorld.Grid.InBounds(x, y))
-                return false;
-
-            if (!simulationWorld.ElementRegistry.IsRegistered(elementId))
-                return false;
+            if (!IsReady()) return false;
+            if (!simulationWorld.Grid.InBounds(x, y)) return false;
+            if (!simulationWorld.ElementRegistry.IsRegistered(elementId)) return false;
 
             ref readonly var element = ref simulationWorld.GetElement(elementId);
 
-            SimCell cell = new SimCell(
+            SimCell newCell = new SimCell(
                 elementId: element.Id,
                 mass: element.DefaultMass,
                 temperature: 0,
                 flags: SimCellFlags.None);
 
-            simulationWorld.Grid.SetCell(x, y, cell);
+            int index = simulationWorld.Grid.ToIndex(x, y);
+
+            // 기존 원소를 밀어내고 새 원소를 배치
+            DisplacementResolver.TryPlaceWithDisplacement(
+                simulationWorld.Grid,
+                simulationWorld.ElementRegistry,
+                index,
+                newCell);
+
             gridRenderer.RefreshAll();
 
             return true;
