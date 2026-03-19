@@ -8,8 +8,7 @@ namespace Core.Simulation.Runtime
 {
     /// <summary>
     /// SimulationCommand 일괄 적용기.
-    /// Move, Swap, MergeMass 커맨드를 실행한다.
-    /// SimulationRunner, GasFlowPlanner 등 여러 곳에서 공유 사용.
+    /// Move, Swap, MergeMass, ForceMergeMass 커맨드를 실행한다.
     /// </summary>
     public sealed class CommandApplier
     {
@@ -53,6 +52,10 @@ namespace Core.Simulation.Runtime
 
                     case SimulationCommandType.MergeMass:
                         ApplyMergeMass(command, vacuumCell);
+                        break;
+
+                    case SimulationCommandType.ForceMergeMass:
+                        ApplyForceMergeMass(command, vacuumCell);
                         break;
 
                     case SimulationCommandType.FlowBatch:
@@ -118,6 +121,41 @@ namespace Core.Simulation.Runtime
             {
                 sourceCell = vacuumCell;
             }
+        }
+
+        /// <summary>
+        /// MaxMass를 무시하고 전량 강제 합산한다.
+        /// 밀어내기(Displacement)에서 사용: 기체를 동종에 압축 합류.
+        /// source는 항상 진공이 된다.
+        /// </summary>
+        private void ApplyForceMergeMass(SimulationCommand command, SimCell vacuumCell)
+        {
+            ref SimCell sourceCell = ref _grid.GetCellRef(command.FromIndex);
+            ref SimCell targetCell = ref _grid.GetCellRef(command.ToIndex);
+
+            // 원소 불일치 → 무시 (안전 장치)
+            if (sourceCell.ElementId != targetCell.ElementId)
+                return;
+
+            int transferMass = sourceCell.Mass;
+            if (transferMass <= 0)
+            {
+                sourceCell = vacuumCell;
+                return;
+            }
+
+            int targetMassBefore = targetCell.Mass;
+
+            short mergedTemperature = ComputeMassWeightedTemperature(
+                sourceCell.Temperature, transferMass,
+                targetCell.Temperature, targetMassBefore,
+                transferMass);
+
+            // MaxMass 무시 — 전량 합산
+            targetCell.Mass += transferMass;
+            targetCell.Temperature = mergedTemperature;
+
+            sourceCell = vacuumCell;
         }
 
         private static short ComputeMassWeightedTemperature(

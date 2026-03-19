@@ -129,6 +129,7 @@ namespace Tests.EditMode
             // Water MinSpreadMass = 100kg (= 100_000g)
             SetCell(3, 2, WaterId, 100_000);
             SetCell(3, 1, WaterId, 1_000_000);
+            SetCell(3, 0, BedrockId, 0);
 
             _runner.Step(1);
 
@@ -147,6 +148,7 @@ namespace Tests.EditMode
         {
             SetCell(3, 2, WaterId, 150_000);
             SetCell(3, 1, WaterId, 1_000_000);
+            SetCell(3, 0, BedrockId, 0);
 
             _runner.Step(2);
 
@@ -172,6 +174,7 @@ namespace Tests.EditMode
             // 첫 번째 방향 12_000, 두 번째는 남은 질량 제한으로 8_000만 가능
             SetCell(3, 2, WaterId, 120_000);
             SetCell(3, 1, WaterId, 1_000_000);
+            SetCell(3, 0, BedrockId, 0);
 
             _runner.Step(1);
 
@@ -185,6 +188,7 @@ namespace Tests.EditMode
 
             SetCell(3, 2, WaterId, 120_000);
             SetCell(3, 1, WaterId, 1_000_000);
+            SetCell(3, 0, BedrockId, 0);
 
             _runner.Step(2);
 

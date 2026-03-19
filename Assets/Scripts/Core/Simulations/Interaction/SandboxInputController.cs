@@ -91,11 +91,12 @@ namespace Core.Simulation.Interaction
 
             if (Input.GetMouseButton(1))
             {
-                if (ShouldSkipRepeatedEdit(x, y, 1))
-                    return;
+                // if (ShouldSkipRepeatedEdit(x, y, 1))
+                //     return;
 
-                worldEditService.EraseCell(x, y);
-                RememberLastEdited(x, y, 1);
+                // worldEditService.EraseCell(x, y);
+                // RememberLastEdited(x, y, 1);
+                worldEditService.LogCellInfo(x, y);
                 return;
             }
 

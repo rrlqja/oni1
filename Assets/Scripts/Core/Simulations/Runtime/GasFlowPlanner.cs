@@ -86,6 +86,9 @@ namespace Core.Simulation.Runtime
                     if (sourceCell.Mass <= 0)
                         continue;
 
+                    if (sourceCell.Mass <= sourceElement.MinSpreadMass)
+                        continue;
+
                     if (TryBuildEqualizationBatch(
                             x, y, sourceIndex,
                             in sourceCell, in sourceElement,

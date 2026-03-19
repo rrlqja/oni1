@@ -9,7 +9,8 @@ namespace Core.Simulation.Commands
         Swap = 2,
         MergeMass = 3,
         FlowBatch = 4,
-        Transform = 5
+        Transform = 5,
+        ForceMergeMass = 6,
     }
 
     public readonly struct SimulationCommand
@@ -48,6 +49,18 @@ namespace Core.Simulation.Commands
         {
             return new SimulationCommand(
                 SimulationCommandType.MergeMass,
+                fromIndex,
+                toIndex);
+        }
+
+        /// <summary>
+        /// MaxMass를 무시하고 질량을 강제 합산한다.
+        /// 밀어내기(Displacement)에서 사용: 기체를 동종에 압축 합류.
+        /// </summary>
+        public static SimulationCommand CreateForceMergeMass(int fromIndex, int toIndex)
+        {
+            return new SimulationCommand(
+                SimulationCommandType.ForceMergeMass,
                 fromIndex,
                 toIndex);
         }

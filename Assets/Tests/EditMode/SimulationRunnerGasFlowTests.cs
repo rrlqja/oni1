@@ -102,19 +102,36 @@ namespace Tests.EditMode
         [Test]
         public void Oxygen_NormalFlow_Does_Not_Enter_Liquid_Cell()
         {
-            SetCell(3, 3, OxygenId, 1_000);
-            SetCell(3, 4, WaterId, 1_000_000);
+            // Oxygen을 Water 위에 배치 → 중력 Swap 발생 안 함
+            // (Gas priority < Liquid priority → GravityOperator.None)
+            SetCell(3, 3, WaterId, 1_000_000);  // Water 아래
+            SetCell(3, 4, OxygenId, 1_000);     // Oxygen 위
 
-            // Water가 Liquid phase에서 좌우로 퍼지지 못하게 막는다
-            SetCell(2, 4, BedrockId, 0);
-            SetCell(4, 4, BedrockId, 0);
+            // Water 이동 차단
+            SetCell(2, 3, BedrockId, 0);
+            SetCell(4, 3, BedrockId, 0);
+            SetCell(3, 2, BedrockId, 0);
+
+            // Oxygen 위를 막아서 좌우로만 퍼지게 함
+            SetCell(3, 5, BedrockId, 0);
 
             _runner.Step(1);
 
-            SimCell waterCell = _grid.GetCell(3, 4);
+            // Oxygen이 Water 셀(3,3)으로 침투하지 않았는지 확인
+            SimCell waterCell = _grid.GetCell(3, 3);
+            Assert.That(waterCell.ElementId, Is.EqualTo(WaterId),
+                "산소가 물 셀로 침투하면 안 됩니다");
+            Assert.That(waterCell.Mass, Is.EqualTo(1_000_000),
+                "물 질량이 변하지 않아야 합니다");
 
-            Assert.That(waterCell.ElementId, Is.EqualTo(WaterId));
-            Assert.That(waterCell.Mass, Is.EqualTo(1_000_000));
+            // Oxygen이 좌우 진공으로 퍼졌는지 확인
+            int totalOxygen = 0;
+            for (int y = 0; y < _grid.Height; y++)
+                for (int x = 0; x < _grid.Width; x++)
+                    if (_grid.GetCell(x, y).ElementId == OxygenId)
+                        totalOxygen += _grid.GetCell(x, y).Mass;
+
+            Assert.That(totalOxygen, Is.EqualTo(1_000), "산소 질량 보존");
         }
 
         [Test]

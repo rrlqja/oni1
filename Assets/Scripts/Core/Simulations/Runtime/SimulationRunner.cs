@@ -7,20 +7,17 @@ using Core.Simulation.Definitions;
 namespace Core.Simulation.Runtime
 {
     /// <summary>
-    /// 시뮬레이션 틱 파이프라인 조율자.
+    /// 시뮬레이션 틱 파이프라인 조율자 (v3).
     ///
-    /// 파이프라인:
-    ///   1. FallingSolid    — 고체 낙하, Swap, Merge
-    ///   2. Displacement↕   — 액체↔기체 수직 스왑 (중력)
-    ///   3. Liquid           — 액체 하향 + 좌우 확산 (진공/동종 대상)
-    ///   4. Displacement↔   — 액체가 옆 기체를 밀어내고 질량 분할
-    ///   5. Gas A            — 같은 가스끼리 균등화
-    ///   6. Gas B            — 밀도 인지 이동 (drift + swap)
+    /// 방향 분리 원칙:
+    ///   Phase 1: Gravity          — 수직     FallingSolid + Liquid 낙하 (Swap, Merge)
+    ///   Phase 2: LiquidFlow       — 좌우     액체 확산 + 기체 밀어내기 (FlowBatch, Swap)
+    ///   Phase 3: LiquidDensity    — 수직     이종 액체 밀도 교환 (Swap)
+    ///   Phase 4: GasEqualization  — 상하좌우  같은 가스끼리 균등화 (FlowBatch)
+    ///   Phase 5: GasDensity       — 상하좌우  밀도 인지 이동 (FlowBatch, Swap)
     ///
-    /// Displacement↕를 Liquid 앞에 배치하여:
-    ///   - 수직 스왑 후 같은 틱에 LiquidPlanner가 즉시 질량 균등화
-    ///   - MaxMass 누적 방지
-    ///   - 한 틱에 1칸만 낙하 보장
+    /// Phase 1과 Phase 2의 방향이 겹치지 않으므로
+    /// MarkActed 없이 같은 틱에 낙하 + 좌우 확산이 가능.
     /// </summary>
     public sealed class SimulationRunner
     {
@@ -28,11 +25,13 @@ namespace Core.Simulation.Runtime
         private readonly ElementRegistry _registry;
 
         private readonly List<SimulationCommand> _commands = new(256);
+        private readonly List<SimulationCommand> _displaceCommands = new(64);
         private readonly List<FlowBatchCommand> _flowCommands = new(256);
+        private readonly bool[] _swapTargetUsed;
 
-        private readonly FallingSolidProcessor _fallingSolidProcessor;
-        private readonly DisplacementProcessor _displacementProcessor;
-        private readonly LiquidFlowPlanner _liquidFlowPlanner;
+        private readonly GravityProcessor _gravityProcessor;
+        private readonly LiquidFlowProcessor _liquidFlowProcessor;
+        private readonly LiquidDensityProcessor _liquidDensityProcessor;
         private readonly GasFlowPlanner _gasFlowPlanner;
 
         private readonly CommandApplier _commandApplier;
@@ -43,9 +42,11 @@ namespace Core.Simulation.Runtime
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
 
-            _fallingSolidProcessor = new FallingSolidProcessor(_grid, _registry);
-            _displacementProcessor = new DisplacementProcessor(_grid, _registry);
-            _liquidFlowPlanner = new LiquidFlowPlanner(_grid, _registry);
+            _swapTargetUsed = new bool[_grid.Length];
+
+            _gravityProcessor = new GravityProcessor(_grid, _registry);
+            _liquidFlowProcessor = new LiquidFlowProcessor(_grid, _registry);
+            _liquidDensityProcessor = new LiquidDensityProcessor(_grid, _registry);
             _gasFlowPlanner = new GasFlowPlanner(_grid, _registry);
 
             _commandApplier = new CommandApplier(_grid, _registry);
@@ -56,38 +57,37 @@ namespace Core.Simulation.Runtime
         {
             bool leftToRight = (currentTick & 1) == 0;
 
-            // 1) FallingSolid — 고체 낙하
+            // Phase 1: 중력
             _commands.Clear();
             _grid.ClearAllTickReservations();
-            _fallingSolidProcessor.BuildCommands(currentTick, leftToRight, _commands);
+            _gravityProcessor.BuildCommands(currentTick, leftToRight, _commands);
             _commandApplier.Apply(_commands);
 
-            // 2) Displacement ↕ — 액체가 기체를 통과해서 가라앉음 (1칸/틱)
-            //    MarkActed로 스왑된 셀을 표시 → Phase 3이 건너뜀
-            _grid.ClearAllTickReservations();
-            _displacementProcessor.ClearActed();
-            _displacementProcessor.ProcessVerticalGravity(currentTick, leftToRight);
-
-            // 3) Liquid — 진공/동종 액체 대상 확산 + 하향
-            //    주의: ClearAllTickReservations 하지 않음!
-            //    Phase 2에서 MarkActed된 셀은 LiquidPlanner가 건너뜀
-            //    → 방금 스왑으로 내려온 물이 같은 틱에 또 이동하지 않음
+            // Phase 2: 액체 좌우 확산 + 기체 밀어내기
+            //   Phase 1(수직)과 방향이 겹치지 않으므로 MarkActed 불필요.
+            //   물이 Phase 1에서 1칸 낙하 → 같은 틱에 Phase 2에서 좌우 확산.
             _flowCommands.Clear();
-            _liquidFlowPlanner.BuildNormalFlowBatches(currentTick, leftToRight, _flowCommands);
-            _flowBatchApplier.Apply(_flowCommands);
+            _displaceCommands.Clear();
+            Array.Clear(_swapTargetUsed, 0, _swapTargetUsed.Length);
+            _liquidFlowProcessor.BuildFlowBatches(
+                currentTick, leftToRight,
+                _flowCommands, _displaceCommands, _swapTargetUsed);
+            _commandApplier.Apply(_displaceCommands);   // Swap/Merge 먼저 (길 비움)
+            _flowBatchApplier.Apply(_flowCommands);      // FlowBatch 다음 (확산)
 
-            // 4) Displacement ↔ — 액체가 옆 기체를 밀어내고 질량 분할
-            //    Phase 3에서 처리 못한 잔여 케이스 (옆에 기체만 있을 때)
+            // Phase 3: 액체 밀도 이동 — 이종 액체 밀도 역전 교환
+            _commands.Clear();
             _grid.ClearAllTickReservations();
-            _displacementProcessor.ProcessHorizontalDisplacement(leftToRight);
+            _liquidDensityProcessor.BuildCommands(currentTick, leftToRight, _commands);
+            _commandApplier.Apply(_commands);
 
-            // 5) Gas A — 같은 가스끼리 균등화
+            // Phase 4: 기체 균등화
             _flowCommands.Clear();
             _grid.ClearAllTickReservations();
             _gasFlowPlanner.BuildNormalFlowBatches(currentTick, leftToRight, _flowCommands);
             _flowBatchApplier.Apply(_flowCommands);
 
-            // 6) Gas B — 밀도 인지 이동 (진공 drift + 이종 가스 swap)
+            // Phase 5: 기체 밀도 이동
             _flowCommands.Clear();
             _commands.Clear();
             _grid.ClearAllTickReservations();
