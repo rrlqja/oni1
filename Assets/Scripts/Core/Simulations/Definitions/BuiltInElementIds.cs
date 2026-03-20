@@ -8,5 +8,6 @@ namespace Core.Simulation.Definitions
         public const byte Oxygen = 3;
         public const byte Water = 4;
         public const byte Hydrogen = 5;
+        public const byte Oil = 6;
     }
 }

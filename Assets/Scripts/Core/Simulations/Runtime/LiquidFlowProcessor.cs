@@ -265,6 +265,12 @@ namespace Core.Simulation.Runtime
             if (below.ElementId == actorDef.Id && below.Mass < actorDef.MaxMass)
                 return false;
 
+            // 아래가 더 가벼운 액체 → 밀도 교환(Phase 3)으로 가라앉을 수 있음
+            if (belowDef.BehaviorType == ElementBehaviorType.Liquid
+                && belowDef.Id != actorDef.Id
+                && actorDef.Density > belowDef.Density)
+                return false;
+
             return true;
         }
 

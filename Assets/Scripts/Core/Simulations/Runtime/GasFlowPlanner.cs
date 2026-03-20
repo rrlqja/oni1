@@ -349,7 +349,10 @@ namespace Core.Simulation.Runtime
             if (cell.ElementId == BuiltInElementIds.Vacuum)
             {
                 // 진공 → drift 가능
+                // 진공은 밀도 편향 없음 — 떠오르거나 가라앉을 매질이 없다.
+                // 밀도 편향은 이종 가스 Swap에서만 적용.
                 actionType = 1;
+                directionWeight = 1f;
             }
             else if (element.BehaviorType == ElementBehaviorType.Gas &&
                      cell.ElementId != sourceElementId &&

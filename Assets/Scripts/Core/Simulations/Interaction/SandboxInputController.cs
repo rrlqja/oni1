@@ -75,6 +75,9 @@ namespace Core.Simulation.Interaction
             
             if (Input.GetKeyDown(KeyCode.Alpha6) || Input.GetKeyDown(KeyCode.Keypad6))
                 worldEditService.SetSelectedElement(BuiltInElementIds.Hydrogen);
+
+            if (Input.GetKeyDown(KeyCode.Alpha7) || Input.GetKeyDown(KeyCode.Keypad7))
+                worldEditService.SetSelectedElement(BuiltInElementIds.Oil);
         }
 
         private void HandleMousePainting(int x, int y)
@@ -91,12 +94,11 @@ namespace Core.Simulation.Interaction
 
             if (Input.GetMouseButton(1))
             {
-                // if (ShouldSkipRepeatedEdit(x, y, 1))
-                //     return;
+                if (ShouldSkipRepeatedEdit(x, y, 1))
+                    return;
 
-                // worldEditService.EraseCell(x, y);
-                // RememberLastEdited(x, y, 1);
-                worldEditService.LogCellInfo(x, y);
+                worldEditService.EraseCell(x, y);
+                RememberLastEdited(x, y, 1);
                 return;
             }
 
