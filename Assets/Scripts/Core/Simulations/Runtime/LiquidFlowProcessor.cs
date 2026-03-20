@@ -21,6 +21,9 @@ namespace Core.Simulation.Runtime
     /// 방향 분리:
     ///   Phase 1 = 수직, Phase 2 = 좌우 → MarkActed 불필요, 2칸 낙하 원천 차단.
     ///   물이 Phase 1에서 1칸 낙하한 뒤, 같은 틱에 Phase 2에서 즉시 좌우 확산.
+    ///
+    /// [개선 2] Over-MaxMass 균등화: 소스 질량이 타겟보다 많으면
+    /// MaxMass를 초과하더라도 차이만큼 확산을 허용한다.
     /// </summary>
     public sealed class LiquidFlowProcessor
     {
@@ -169,9 +172,10 @@ namespace Core.Simulation.Runtime
 
             if (result == LateralResult.Flow || result == LateralResult.Displaced)
             {
+                // [개선 2] sourceMass를 전달하여 over-MaxMass 균등화 허용
                 int capacity = (result == LateralResult.Displaced)
                     ? sourceDef.MaxMass
-                    : GetFlowCapacity(sourceCell.ElementId, sourceDef.MaxMass, in targetCell);
+                    : GetFlowCapacity(sourceCell.ElementId, sourceCell.Mass, sourceDef.MaxMass, in targetCell);
                 if (capacity <= 0)
                     return;
 
@@ -278,13 +282,31 @@ namespace Core.Simulation.Runtime
         //  유틸리티
         // ================================================================
 
-        private static int GetFlowCapacity(byte sourceElementId, int maxMass, in SimCell targetCell)
+        /// <summary>
+        /// 타겟 셀에 보낼 수 있는 최대 질량을 계산한다.
+        ///
+        /// [개선 2] Over-MaxMass 균등화 허용:
+        /// 일반 케이스(타겟 MaxMass 미만) → 기존대로 headroom 반환.
+        /// Over-MaxMass 케이스(타겟이 MaxMass 이상) → 소스가 타겟보다 많으면
+        /// 차이만큼 허용하여 자연스러운 균등화를 가능하게 한다.
+        /// </summary>
+        private static int GetFlowCapacity(
+            byte sourceElementId, int sourceMass, int maxMass, in SimCell targetCell)
         {
             if (targetCell.ElementId == BuiltInElementIds.Vacuum)
                 return maxMass;
 
             if (targetCell.ElementId == sourceElementId)
-                return Math.Max(0, maxMass - targetCell.Mass);
+            {
+                // 일반 케이스: 타겟에 MaxMass 미만 여유 있음
+                int headroom = maxMass - targetCell.Mass;
+                if (headroom > 0)
+                    return headroom;
+
+                // Over-MaxMass 균등화: 소스가 타겟보다 많으면 차이만큼 허용
+                int excess = sourceMass - targetCell.Mass;
+                return Math.Max(0, excess);
+            }
 
             return 0;
         }

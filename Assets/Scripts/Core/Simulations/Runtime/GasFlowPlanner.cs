@@ -12,13 +12,13 @@ namespace Core.Simulation.Runtime
     /// Phase A (균등화):
     ///   같은 가스끼리 질량 평균을 맞추며 확산한다.
     ///   FlowBatchCommand로 처리.
+    ///   MaxMass 제한 없이 균등화 — 밀어내기 등으로 초과된 질량도 자연스럽게 분배.
     ///
     /// Phase B (밀도 인지 이동):
     ///   모든 가스 셀이 밀도 기반 방향 가중치에 따라 이동을 시도한다.
-    ///   - 진공 인접 → 통째 이동 (drift)
-    ///   - 다른 가스 인접 + 밀도 역전 → 스왑
-    ///   방향별 확률: 무거운 가스는 아래로, 가벼운 가스는 위로 편향.
-    ///   좌우는 중립. 결과적으로 시간이 지나면 밀도순 층 분리.
+    ///   - 진공 인접 → 통째 이동 (drift), 연속 밀도 비율 기반 방향 편향
+    ///   - 다른 가스 인접 → 실제 밀도 비교로 스왑 가중치 결정
+    ///   결과적으로 시간이 지나면 밀도순 층 분리.
     /// </summary>
     public sealed class GasFlowPlanner
     {
@@ -32,17 +32,11 @@ namespace Core.Simulation.Runtime
 
         /// <summary>
         /// 방향 가중치 계산에 사용하는 최대 밀도 기준값.
-        /// Phase B 밀도 인지 이동에서 사용.
+        /// Phase B 밀도 인지 이동에서 연속 가중치 계산에 사용.
         /// </summary>
         private const float MAX_GAS_DENSITY = 2000f;
 
-        /// <summary>
-        /// 균등화 방향 차단 기준 밀도.
-        /// 이 값 이상 → "무거운 가스" → 아래 + 좌우로만 균등화.
-        /// 이 값 미만 → "가벼운 가스" → 위 + 좌우로만 균등화.
-        /// Hydrogen=90, Oxygen=500 기준으로 300이면 H₂는 위로, O₂는 아래로.
-        /// </summary>
-        private const float DENSITY_THRESHOLD = 300f;
+        // [개선 1] DENSITY_THRESHOLD 삭제 — 이진 분류 대신 연속 밀도 비율 사용
 
         public GasFlowPlanner(WorldGrid grid, ElementRegistry registry)
         {
@@ -108,6 +102,8 @@ namespace Core.Simulation.Runtime
         //  드리프트(진공 이동)와 부력 스왑(이종 가스 교환)을 통합.
         //  4방향 모두 고려하며, 밀도에 따라 방향 확률이 달라진다.
         //
+        //  [개선 1] 연속 밀도 비율 + 실제 이웃 밀도 비교
+        //
         //  출력:
         //    - 진공 이동 → FlowBatchCommand (flowOutput)
         //    - 이종 스왑 → SimulationCommand (swapOutput)
@@ -164,6 +160,8 @@ namespace Core.Simulation.Runtime
 
         // ────────────────────────────────────────────────────
         //  밀도 인지 이동 — 핵심 로직
+        //
+        //  [개선 1] 연속 밀도 비율 기반 가중치 + verticalBias 전달
         // ────────────────────────────────────────────────────
 
         private void TryDensityMove(
@@ -178,13 +176,31 @@ namespace Core.Simulation.Runtime
         {
             float density = sourceElement.Density;
 
-            // ── 1) 4방향 가중치 계산 ──
-            // 상하: 이진 차단 — 무거우면 아래만, 가벼우면 위만
-            // 좌우: 약하게 허용 — 자연스러운 옆 퍼짐
-            bool isHeavy = density >= DENSITY_THRESHOLD;
+            // ── 1) 밀도 기반 방향 가중치 (진공 Drift 용) ──
+            // 선호 방향 + 좌우만 허용, 반대 방향은 완전 차단.
+            // 반대 방향에 낮은 확률이라도 있으면 분리된 기체가 다시 섞인다.
+            //
+            // 연속 비율로 선호 방향 강도를 결정하되, 반대 방향은 0으로 고정:
+            //   H₂(90):   wUp=9.6, wDown=0   (위로만)
+            //   O₂(500):  wUp=7.5, wDown=0   (위로만, 약하게)
+            //   CO₂(1000): wUp=0,  wDown=5.0  (아래로만)
+            float normalizedDensity = Math.Min(density / MAX_GAS_DENSITY, 1f);
+            float rawUp = (1f - normalizedDensity) * 10f;
+            float rawDown = normalizedDensity * 10f;
 
-            float wUp = isHeavy ? 0f : 10f;
-            float wDown = isHeavy ? 10f : 0f;
+            // 반대 방향 차단: 선호 방향만 살리고 반대는 0
+            float wUp, wDown;
+            if (rawDown > rawUp)
+            {
+                wDown = rawDown;
+                wUp = 0f;
+            }
+            else
+            {
+                wUp = rawUp;
+                wDown = 0f;
+            }
+
             float wLeft = 1f;
             float wRight = 1f;
 
@@ -197,10 +213,11 @@ namespace Core.Simulation.Runtime
 
             // 방향 순서: left, right, up, down
             // leftToRight 교대로 좌우 우선순위를 바꿔 편향 제거
-            int dir0X = fhx, dir0Y = y; float dir0W = (fhx < x) ? wLeft : wRight;
-            int dir1X = shx, dir1Y = y; float dir1W = (shx < x) ? wLeft : wRight;
-            int dir2X = x, dir2Y = y + 1; float dir2W = wUp;
-            int dir3X = x, dir3Y = y - 1; float dir3W = wDown;
+            // verticalBias: -1=아래, 0=수평, +1=위
+            int dir0X = fhx, dir0Y = y; float dir0W = (fhx < x) ? wLeft : wRight; int dir0Bias = 0;
+            int dir1X = shx, dir1Y = y; float dir1W = (shx < x) ? wLeft : wRight; int dir1Bias = 0;
+            int dir2X = x, dir2Y = y + 1; float dir2W = wUp;   int dir2Bias = 1;
+            int dir3X = x, dir3Y = y - 1; float dir3W = wDown;  int dir3Bias = -1;
 
             // 후보 배열 (인라인, 힙 할당 없음)
             int c0Idx = -1, c1Idx = -1, c2Idx = -1, c3Idx = -1;
@@ -208,25 +225,29 @@ namespace Core.Simulation.Runtime
             float c0Wt = 0f, c1Wt = 0f, c2Wt = 0f, c3Wt = 0f;
             int candidateCount = 0;
 
-            EvaluateDirection(dir0X, dir0Y, dir0W, sourceCell.ElementId, density, currentTick,
+            EvaluateDirection(dir0X, dir0Y, dir0W, dir0Bias,
+                sourceCell.ElementId, density, currentTick,
                 ref candidateCount, ref c0Idx, ref c0Act, ref c0Wt,
                 ref c1Idx, ref c1Act, ref c1Wt,
                 ref c2Idx, ref c2Act, ref c2Wt,
                 ref c3Idx, ref c3Act, ref c3Wt);
 
-            EvaluateDirection(dir1X, dir1Y, dir1W, sourceCell.ElementId, density, currentTick,
+            EvaluateDirection(dir1X, dir1Y, dir1W, dir1Bias,
+                sourceCell.ElementId, density, currentTick,
                 ref candidateCount, ref c0Idx, ref c0Act, ref c0Wt,
                 ref c1Idx, ref c1Act, ref c1Wt,
                 ref c2Idx, ref c2Act, ref c2Wt,
                 ref c3Idx, ref c3Act, ref c3Wt);
 
-            EvaluateDirection(dir2X, dir2Y, dir2W, sourceCell.ElementId, density, currentTick,
+            EvaluateDirection(dir2X, dir2Y, dir2W, dir2Bias,
+                sourceCell.ElementId, density, currentTick,
                 ref candidateCount, ref c0Idx, ref c0Act, ref c0Wt,
                 ref c1Idx, ref c1Act, ref c1Wt,
                 ref c2Idx, ref c2Act, ref c2Wt,
                 ref c3Idx, ref c3Act, ref c3Wt);
 
-            EvaluateDirection(dir3X, dir3Y, dir3W, sourceCell.ElementId, density, currentTick,
+            EvaluateDirection(dir3X, dir3Y, dir3W, dir3Bias,
+                sourceCell.ElementId, density, currentTick,
                 ref candidateCount, ref c0Idx, ref c0Act, ref c0Wt,
                 ref c1Idx, ref c1Act, ref c1Wt,
                 ref c2Idx, ref c2Act, ref c2Wt,
@@ -316,11 +337,15 @@ namespace Core.Simulation.Runtime
 
         // ────────────────────────────────────────────────────
         //  방향 평가: 해당 방향이 이동 가능한지, 어떤 종류인지
+        //
+        //  [개선 1] verticalBias 파라미터 추가 — 이종 기체 Swap 시
+        //  실제 이웃 밀도와 비교하여 가중치 결정
         // ────────────────────────────────────────────────────
 
         private void EvaluateDirection(
             int nx, int ny,
             float directionWeight,
+            int verticalBias,
             byte sourceElementId,
             float sourceDensity,
             int currentTick,
@@ -349,20 +374,36 @@ namespace Core.Simulation.Runtime
             if (cell.ElementId == BuiltInElementIds.Vacuum)
             {
                 // 진공 → drift 가능
-                // 진공은 밀도 편향 없음 — 떠오르거나 가라앉을 매질이 없다.
-                // 밀도 편향은 이종 가스 Swap에서만 적용.
+                // caller의 연속 가중치(wUp/wDown/wLeft/wRight)를 그대로 사용
                 actionType = 1;
-                directionWeight = 1f;
             }
             else if (element.BehaviorType == ElementBehaviorType.Gas &&
                      cell.ElementId != sourceElementId &&
                      cell.Mass > 0)
             {
-                // 다른 가스 → swap 가능 (항상. 방향 가중치가 알아서 처리)
+                // 이종 기체 → swap: 실제 밀도 비교로 가중치 결정
+                // 반대 방향 스왑은 완전 차단 — 분리된 기체가 다시 섞이는 것을 방지
                 actionType = 2;
+                float neighborDensity = element.Density;
+
+                if (verticalBias < 0)
+                {
+                    // 아래 방향: 소스가 더 무거울 때만 허용 (가라앉기)
+                    directionWeight = sourceDensity > neighborDensity ? 10f : 0f;
+                }
+                else if (verticalBias > 0)
+                {
+                    // 위 방향: 소스가 더 가벼울 때만 허용 (떠오르기)
+                    directionWeight = sourceDensity < neighborDensity ? 10f : 0f;
+                }
+                // else (수평, verticalBias==0): caller의 wLeft/wRight 유지
             }
 
             if (actionType == 0)
+                return;
+
+            // 가중치 0이면 후보 등록 불필요 (반대 방향 차단됨)
+            if (directionWeight <= 0f)
                 return;
 
             // 후보 등록
@@ -378,6 +419,8 @@ namespace Core.Simulation.Runtime
 
         // ================================================================
         //  균등화 배치 생성 (Phase A 내부)
+        //
+        //  [개선 2] MaxMass 제한 없이 균등화 — deficit 기반으로만 분배
         // ================================================================
 
         private bool TryBuildEqualizationBatch(
@@ -392,7 +435,6 @@ namespace Core.Simulation.Runtime
 
             int sourceMass = sourceCell.Mass;
             byte sourceElId = sourceCell.ElementId;
-            int maxMass = sourceElement.MaxMass;
 
             int n0Idx = -1, n1Idx = -1, n2Idx = -1, n3Idx = -1;
             int n0Mass = 0, n1Mass = 0, n2Mass = 0, n3Mass = 0;
@@ -406,13 +448,13 @@ namespace Core.Simulation.Runtime
             // n0, n1 = 좌우 (수평)
             // n2 = 위 (y+1)
             // n3 = 아래 (y-1)
-            GatherNeighbor(firstHX, y, sourceElId, maxMass,
+            GatherNeighbor(firstHX, y, sourceElId,
                 ref participantCount, ref totalMass, ref n0Idx, ref n0Mass);
-            GatherNeighbor(secondHX, y, sourceElId, maxMass,
+            GatherNeighbor(secondHX, y, sourceElId,
                 ref participantCount, ref totalMass, ref n1Idx, ref n1Mass);
-            GatherNeighbor(x, y + 1, sourceElId, maxMass,
+            GatherNeighbor(x, y + 1, sourceElId,
                 ref participantCount, ref totalMass, ref n2Idx, ref n2Mass);
-            GatherNeighbor(x, y - 1, sourceElId, maxMass,
+            GatherNeighbor(x, y - 1, sourceElId,
                 ref participantCount, ref totalMass, ref n3Idx, ref n3Mass);
 
             if (participantCount <= 1)
@@ -433,16 +475,16 @@ namespace Core.Simulation.Runtime
             byte transferCount = 0;
             int totalPlanned = 0;
 
-            PlanWeightedTransfer(n0Idx, n0Mass, average, maxMass,
+            PlanWeightedTransfer(n0Idx, n0Mass, average,
                 sourceExcess, w, ref totalPlanned, ref transferCount,
                 ref t0, ref t1, ref t2, ref t3);
-            PlanWeightedTransfer(n1Idx, n1Mass, average, maxMass,
+            PlanWeightedTransfer(n1Idx, n1Mass, average,
                 sourceExcess, w, ref totalPlanned, ref transferCount,
                 ref t0, ref t1, ref t2, ref t3);
-            PlanWeightedTransfer(n2Idx, n2Mass, average, maxMass,
+            PlanWeightedTransfer(n2Idx, n2Mass, average,
                 sourceExcess, w, ref totalPlanned, ref transferCount,
                 ref t0, ref t1, ref t2, ref t3);
-            PlanWeightedTransfer(n3Idx, n3Mass, average, maxMass,
+            PlanWeightedTransfer(n3Idx, n3Mass, average,
                 sourceExcess, w, ref totalPlanned, ref transferCount,
                 ref t0, ref t1, ref t2, ref t3);
 
@@ -460,9 +502,13 @@ namespace Core.Simulation.Runtime
         //  유틸리티 메서드
         // ================================================================
 
+        /// <summary>
+        /// 인접 셀을 균등화 참여자로 수집한다.
+        /// 진공이면 질량 0으로 참여, 동종 기체면 질량 합산.
+        /// </summary>
         private void GatherNeighbor(
             int nx, int ny,
-            byte sourceElementId, int maxMass,
+            byte sourceElementId,
             ref int participantCount, ref long totalMass,
             ref int outIndex, ref int outMass)
         {
@@ -489,9 +535,15 @@ namespace Core.Simulation.Runtime
             totalMass += cell.Mass;
         }
 
+        /// <summary>
+        /// deficit 기반으로 이웃에 보낼 질량을 계획한다.
+        ///
+        /// [개선 2] MaxMass 제한 없이 균등화 — deficit과 remainingExcess로만 제한.
+        /// 질량 보존은 average 계산과 deficit 기반 분배로 자동 보장된다.
+        /// </summary>
         private static void PlanWeightedTransfer(
             int neighborIndex, int neighborMass,
-            int average, int maxMass, int sourceExcess,
+            int average, int sourceExcess,
             float directionWeight,
             ref int totalPlanned, ref byte transferCount,
             ref FlowTransferPlan t0, ref FlowTransferPlan t1,
@@ -502,9 +554,6 @@ namespace Core.Simulation.Runtime
             int deficit = average - neighborMass;
             if (deficit <= 0) return;
 
-            int targetCapacity = maxMass - neighborMass;
-            if (targetCapacity <= 0) return;
-
             int remainingExcess = sourceExcess - totalPlanned;
             if (remainingExcess <= 0) return;
 
@@ -513,7 +562,7 @@ namespace Core.Simulation.Runtime
             int weightedDeficit = (int)(deficit * directionWeight);
             if (weightedDeficit <= 0) return;
 
-            int planned = Math.Min(weightedDeficit, Math.Min(targetCapacity, remainingExcess));
+            int planned = Math.Min(weightedDeficit, remainingExcess);
             if (planned <= 0) return;
 
             totalPlanned += planned;

@@ -6,6 +6,13 @@ using Core.Simulation.Definitions;
 
 namespace Core.Simulation.Runtime
 {
+    /// <summary>
+    /// FlowBatchCommand 일괄 적용기.
+    ///
+    /// [개선 2] MaxMass 제한 없이 질량 수용 — 계획 단계(Processor)에서
+    /// deficit 기반으로 이미 올바른 분배를 보장하므로, 적용 단계에서는
+    /// 계획된 질량을 그대로 수용한다.
+    /// </summary>
     public sealed class FlowBatchApplier
     {
         private readonly WorldGrid _grid;
@@ -61,10 +68,15 @@ namespace Core.Simulation.Runtime
                 int targetIndex = transfer.TargetIndex;
                 SimCell targetSnapshot = _grid.GetCellRef(targetIndex);
 
-                int targetCurrentMass = targetSnapshot.Mass + _flowIncomingMass[targetIndex];
-                int targetCapacity = System.Math.Max(0, _registry.Get(batch.ElementId).MaxMass - targetCurrentMass);
+                // 원소 타입 체크: 타겟이 진공이거나 같은 원소여야 수용
+                if (targetSnapshot.ElementId != BuiltInElementIds.Vacuum &&
+                    targetSnapshot.ElementId != batch.ElementId)
+                    continue;
 
-                int acceptedMass = System.Math.Min(transfer.PlannedMass, targetCapacity);
+                // [개선 2] MaxMass 캡 제거 — 계획된 질량을 그대로 수용
+                // 계획 단계(Processor)에서 deficit 기반으로 이미 올바른 분배를 보장.
+                int acceptedMass = transfer.PlannedMass;
+
                 if (acceptedMass <= 0)
                     continue;
 
@@ -132,8 +144,7 @@ namespace Core.Simulation.Runtime
                 {
                     long retainedThermal = retainedMass > 0
                         ? (long)snapshot.Temperature * retainedMass
-                        : 0L;
-
+                        : 0;
                     long totalThermal = retainedThermal + _flowIncomingThermal[index];
                     updated.Temperature = (short)(totalThermal / finalMass);
                 }
@@ -153,7 +164,6 @@ namespace Core.Simulation.Runtime
                 _flowIncomingElementId[index] = 0;
                 _flowTouched[index] = false;
             }
-
             _flowTouchedIndices.Clear();
         }
     }
