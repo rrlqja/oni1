@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f940cf47b8ee452f9ca920f42f0b852, type: 3}
-  m_Name: Oxygen
+  m_Name: DirtyWater'
   m_EditorClassIdentifier: 
-  id: 6
-  elementName: "\uC0B0\uC18C"
-  behaviorType: 4
-  displacementPriority: 1
+  id: 5
+  elementName: "\uC624\uC5FC\uB41C \uBB3C"
+  behaviorType: 3
+  displacementPriority: 2
   isSolid: 0
-  density: 500
-  defaultMass: 1000
-  maxMass: 1000
-  viscosity: 1
-  minSpreadMass: 0
+  density: 1200
+  defaultMass: 1000000
+  maxMass: 1000000
+  viscosity: 10
+  minSpreadMass: 10000
   baseColor:
     serializedVersion: 2
-    rgba: 4294963410
-  lateralRetainMass: 0
+    rgba: 4286035902
+  lateralRetainMass: 300

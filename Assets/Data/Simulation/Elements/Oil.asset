@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f940cf47b8ee452f9ca920f42f0b852, type: 3}
   m_Name: Oil
   m_EditorClassIdentifier: 
-  id: 6
+  id: 4
   elementName: "\uAE30\uB984"
   behaviorType: 3
   displacementPriority: 2

@@ -68,16 +68,22 @@ namespace Core.Simulation.Interaction
                 worldEditService.SetSelectedElement(BuiltInElementIds.Sand);
 
             if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Oxygen);
+                worldEditService.SetSelectedElement(BuiltInElementIds.Water);
 
             if (Input.GetKeyDown(KeyCode.Alpha5) || Input.GetKeyDown(KeyCode.Keypad5))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Water);
+                worldEditService.SetSelectedElement(BuiltInElementIds.Oil);
             
             if (Input.GetKeyDown(KeyCode.Alpha6) || Input.GetKeyDown(KeyCode.Keypad6))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Hydrogen);
+                worldEditService.SetSelectedElement(BuiltInElementIds.DirtyWater);
 
             if (Input.GetKeyDown(KeyCode.Alpha7) || Input.GetKeyDown(KeyCode.Keypad7))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Oil);
+                worldEditService.SetSelectedElement(BuiltInElementIds.Oxygen);
+
+            if (Input.GetKeyDown(KeyCode.Alpha8) || Input.GetKeyDown(KeyCode.Keypad8))
+                worldEditService.SetSelectedElement(BuiltInElementIds.Hydrogen);
+            
+            if (Input.GetKeyDown(KeyCode.Alpha9) || Input.GetKeyDown(KeyCode.Keypad9))
+                worldEditService.SetSelectedElement(BuiltInElementIds.CarbonDioxide);
         }
 
         private void HandleMousePainting(int x, int y)
