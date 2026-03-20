@@ -13,10 +13,10 @@ namespace Core.Simulation.Runtime
 
         [Header("World Size")]
         [Min(1)]
-        [SerializeField] private int width = 20;
+        [SerializeField] private int width = 128;
 
         [Min(1)]
-        [SerializeField] private int height = 12;
+        [SerializeField] private int height = 64;
 
         [Header("View")]
         [SerializeField] private GridRenderer gridRenderer;
@@ -39,6 +39,22 @@ namespace Core.Simulation.Runtime
         public bool IsPaused => _isPaused;
         public int CurrentTick => _currentTick;
         public float TicksPerSecond => ticksPerSecond;
+
+        // ── 이벤트 ──
+        // 렌더러, UI, 디버그 뷰 등이 구독하여 갱신 타이밍을 받는다.
+        // SimulationWorld가 GridRenderer를 직접 알 필요가 없어진다.
+
+        /// <summary>
+        /// 시뮬레이션 틱이 완료된 후 발생한다.
+        /// GridRenderer 등이 구독하여 화면을 갱신한다.
+        /// </summary>
+        public event Action OnTickCompleted;
+
+        /// <summary>
+        /// 월드가 외부에서 수정(편집, 생성 등)된 후 발생한다.
+        /// 시뮬레이션 틱이 아닌 직접적인 셀 수정 시 사용.
+        /// </summary>
+        public event Action OnWorldModified;
 
         private bool _isPaused;
         private float _tickAccumulator;
@@ -200,16 +216,22 @@ namespace Core.Simulation.Runtime
             StepOneTickInternal();
         }
 
+        /// <summary>
+        /// 외부 수정(WorldEditService 등) 후 호출하여 구독자에게 알린다.
+        /// </summary>
+        public void NotifyWorldModified()
+        {
+            OnWorldModified?.Invoke();
+        }
+
         private void StepOneTickInternal()
         {
             _currentTick++;
 
             _simulationRunner?.Step(_currentTick);
 
-            if (gridRenderer != null)
-                gridRenderer.RefreshAll();
-
-            Debug.Log($"Simulation Tick: {_currentTick}", this);
+            // 이벤트 기반 통지 — 렌더러가 구독하여 갱신
+            OnTickCompleted?.Invoke();
         }
 
         public ref readonly ElementRuntimeDefinition GetElement(byte id)

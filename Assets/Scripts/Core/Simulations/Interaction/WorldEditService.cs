@@ -78,14 +78,13 @@ namespace Core.Simulation.Interaction
 
             int index = simulationWorld.Grid.ToIndex(x, y);
 
-            // 기존 원소를 밀어내고 새 원소를 배치
             DisplacementResolver.TryPlaceWithDisplacement(
                 simulationWorld.Grid,
                 simulationWorld.ElementRegistry,
                 index,
                 newCell);
 
-            gridRenderer.RefreshAll();
+            gridRenderer.MarkDirty();
 
             return true;
         }

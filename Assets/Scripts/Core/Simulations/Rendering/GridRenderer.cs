@@ -1,23 +1,39 @@
 using Core.Simulation.Data;
+using Core.Simulation.Definitions;
 using Core.Simulation.Runtime;
 using UnityEngine;
 
 namespace Core.Simulation.Rendering
 {
+    /// <summary>
+    /// 시뮬레이션 그리드를 Texture2D로 렌더링한다.
+    ///
+    /// 개선사항:
+    ///   - 이벤트 기반 갱신: SimulationWorld.OnTickCompleted 구독
+    ///   - Dirty 플래그: 변경이 있을 때만 텍스처 갱신 (매 프레임 낭비 제거)
+    ///   - 질량 기반 색상: 액체/기체의 질량에 따라 색상 농도가 변한다
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(SpriteRenderer))]
     public sealed class GridRenderer : MonoBehaviour
     {
         [SerializeField] private SpriteRenderer spriteRenderer;
+
         [Min(1)]
         [SerializeField] private int pixelsPerUnit = 1;
 
-        [SerializeField] private bool refreshEveryFrame = false;
+        [Tooltip("배경(진공) 색상")]
+        [SerializeField] private Color32 vacuumColor = new Color32(20, 20, 25, 255);
+
+        [Tooltip("액체/기체의 최소 밝기 (질량 0일 때). 0.0 ~ 1.0")]
+        [Range(0.05f, 0.5f)]
+        [SerializeField] private float minMassBrightness = 0.15f;
 
         private SimulationWorld _world;
         private Texture2D _texture;
         private Sprite _sprite;
         private Color32[] _pixels;
+        private bool _needsRefresh;
 
         public bool IsInitialized => _world != null && _texture != null;
 
@@ -26,41 +42,50 @@ namespace Core.Simulation.Rendering
             spriteRenderer = GetComponent<SpriteRenderer>();
         }
 
-        private void OnEnable()
-        {
-            Debug.Log("GridRenderer OnEnable", this);
-        }
-
         public void Initialize(SimulationWorld world)
         {
-            Debug.Log("GridRenderer Initialize START", this);
-
             if (world == null)
             {
                 Debug.LogError("GridRenderer.Initialize: world is null.", this);
                 return;
             }
 
+            // 이전 구독 해제 (재초기화 대비)
+            UnsubscribeEvents();
+
             _world = world;
 
             if (spriteRenderer == null)
                 spriteRenderer = GetComponent<SpriteRenderer>();
 
-            Debug.Log($"SpriteRenderer found? {spriteRenderer != null}", this);
-
             EnsureTexture();
 
-            Debug.Log("GridRenderer Initialize END", this);
+            // 이벤트 구독
+            SubscribeEvents();
         }
 
         private void LateUpdate()
         {
-            if (!refreshEveryFrame || !IsInitialized)
+            if (!_needsRefresh || !IsInitialized)
                 return;
 
+            _needsRefresh = false;
             RefreshAll();
         }
 
+        /// <summary>
+        /// 다음 LateUpdate에서 텍스처를 갱신하도록 마킹한다.
+        /// WorldEditService 등 외부에서 셀을 직접 수정한 후 호출.
+        /// </summary>
+        public void MarkDirty()
+        {
+            _needsRefresh = true;
+        }
+
+        /// <summary>
+        /// 즉시 전체 텍스처를 갱신한다.
+        /// 초기화 시점이나 강제 갱신이 필요할 때 사용.
+        /// </summary>
         public void RefreshAll()
         {
             if (_world == null || _world.Grid == null || _world.ElementRegistry == null)
@@ -69,18 +94,19 @@ namespace Core.Simulation.Rendering
             EnsureTexture();
 
             WorldGrid grid = _world.Grid;
-            int width = grid.Width;
-            int height = grid.Height;
+            int w = grid.Width;
+            int h = grid.Height;
 
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < h; y++)
             {
-                for (int x = 0; x < width; x++)
+                for (int x = 0; x < w; x++)
                 {
                     SimCell cell = grid.GetCell(x, y);
-                    ref readonly var element = ref _world.GetElement(cell.ElementId);
+                    ref readonly ElementRuntimeDefinition element =
+                        ref _world.GetElement(cell.ElementId);
 
-                    int pixelIndex = y * width + x;
-                    _pixels[pixelIndex] = element.BaseColor;
+                    int pixelIndex = y * w + x;
+                    _pixels[pixelIndex] = CalculateCellColor(in cell, in element);
                 }
             }
 
@@ -98,64 +124,134 @@ namespace Core.Simulation.Rendering
 
             Vector3 local = transform.InverseTransformPoint(worldPosition);
 
-            int width = _world.Grid.Width;
-            int height = _world.Grid.Height;
+            int w = _world.Grid.Width;
+            int h = _world.Grid.Height;
 
-            x = Mathf.FloorToInt(local.x + (width * 0.5f));
-            y = Mathf.FloorToInt(local.y + (height * 0.5f));
+            x = Mathf.FloorToInt(local.x + (w * 0.5f));
+            y = Mathf.FloorToInt(local.y + (h * 0.5f));
 
             return _world.Grid.InBounds(x, y);
         }
 
+        // ================================================================
+        //  셀 색상 계산
+        // ================================================================
+
+        /// <summary>
+        /// 셀의 현재 상태에 따라 렌더링 색상을 계산한다.
+        ///
+        /// - Vacuum: vacuumColor (어두운 배경)
+        /// - 고체: BaseColor 그대로 (질량 변화가 시각적 의미 없음)
+        /// - 액체/기체: BaseColor × 질량 기반 밝기
+        ///   mass=0 → minMassBrightness, mass=MaxMass → 1.0
+        /// </summary>
+        private Color32 CalculateCellColor(
+            in SimCell cell,
+            in ElementRuntimeDefinition element)
+        {
+            // 진공: 배경색
+            if (element.BehaviorType == ElementBehaviorType.Vacuum)
+                return vacuumColor;
+
+            // 고체: BaseColor 그대로
+            if (element.IsSolid)
+                return element.BaseColor;
+
+            // 액체/기체: 질량 기반 밝기
+            int maxMass = element.MaxMass;
+            if (maxMass <= 0)
+                return element.BaseColor;
+
+            float ratio = cell.Mass / (float)maxMass;
+
+            // minMassBrightness ~ 1.0 범위로 보간
+            // ratio=0 → minBrightness, ratio>=1 → 1.0
+            float brightness = Mathf.Clamp01(ratio) * (1f - minMassBrightness) + minMassBrightness;
+
+            Color32 baseColor = element.BaseColor;
+            return new Color32(
+                (byte)(baseColor.r * brightness),
+                (byte)(baseColor.g * brightness),
+                (byte)(baseColor.b * brightness),
+                baseColor.a);
+        }
+
+        // ================================================================
+        //  이벤트 구독
+        // ================================================================
+
+        private void SubscribeEvents()
+        {
+            if (_world == null)
+                return;
+
+            _world.OnTickCompleted += HandleTickCompleted;
+            _world.OnWorldModified += HandleWorldModified;
+        }
+
+        private void UnsubscribeEvents()
+        {
+            if (_world == null)
+                return;
+
+            _world.OnTickCompleted -= HandleTickCompleted;
+            _world.OnWorldModified -= HandleWorldModified;
+        }
+
+        private void HandleTickCompleted()
+        {
+            _needsRefresh = true;
+        }
+
+        private void HandleWorldModified()
+        {
+            _needsRefresh = true;
+        }
+
+        // ================================================================
+        //  텍스처 관리
+        // ================================================================
+
         private void EnsureTexture()
         {
-            Debug.Log("EnsureTexture called", this);
-
             if (_world == null || _world.Grid == null)
-            {
-                Debug.LogWarning($"EnsureTexture aborted. world null? {_world == null}, grid null? {_world?.Grid == null}", this);
                 return;
-            }
 
-            int width = _world.Grid.Width;
-            int height = _world.Grid.Height;
-
-            Debug.Log($"Creating texture {width}x{height}", this);
+            int w = _world.Grid.Width;
+            int h = _world.Grid.Height;
 
             if (_texture != null &&
-                _texture.width == width &&
-                _texture.height == height &&
+                _texture.width == w &&
+                _texture.height == h &&
                 _sprite != null)
             {
-                Debug.Log("Texture already valid, skip recreate", this);
                 return;
             }
 
             ReleaseVisuals();
 
-            _texture = new Texture2D(width, height, TextureFormat.RGBA32, mipChain: false, linear: true)
+            _texture = new Texture2D(w, h, TextureFormat.RGBA32, mipChain: false, linear: true)
             {
                 filterMode = FilterMode.Point,
                 wrapMode = TextureWrapMode.Clamp,
-                name = $"SimulationGridTexture_{width}x{height}"
+                name = $"SimulationGridTexture_{w}x{h}"
             };
 
-            _pixels = new Color32[width * height];
+            _pixels = new Color32[w * h];
 
             _sprite = Sprite.Create(
                 texture: _texture,
-                rect: new Rect(0, 0, width, height),
+                rect: new Rect(0, 0, w, h),
                 pivot: new Vector2(0.5f, 0.5f),
                 pixelsPerUnit: pixelsPerUnit);
 
-            _sprite.name = $"SimulationGridSprite_{width}x{height}";
+            _sprite.name = $"SimulationGridSprite_{w}x{h}";
             spriteRenderer.sprite = _sprite;
-
-            Debug.Log("Sprite assigned to SpriteRenderer", this);
         }
 
         private void OnDestroy()
         {
+            UnsubscribeEvents();
             ReleaseVisuals();
         }
 
