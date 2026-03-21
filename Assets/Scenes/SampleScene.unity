@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 204233353}
   - component: {fileID: 204233352}
   - component: {fileID: 204233354}
+  - component: {fileID: 204233355}
   m_Layer: 0
   m_Name: SimulationWorld
   m_TagString: Untagged
@@ -188,6 +189,9 @@ MonoBehaviour:
   targetCamera: {fileID: 519420031}
   gridRenderManager: {fileID: 1855277519}
   worldEditService: {fileID: 204233353}
+  cameraController: {fileID: 0}
+  brushSize: 1
+  maxBrushSize: 20
 --- !u!114 &204233353
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -216,6 +220,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   simulationWorld: {fileID: 204233350}
+--- !u!114 &204233355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 204233349}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2003faceb74c944e97581c5ee47eff1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  simulationWorld: {fileID: 204233350}
+  worldEditService: {fileID: 204233353}
+  inputController: {fileID: 204233352}
+  elementDatabase: {fileID: 11400000, guid: c62dd4a8a871a4e5a8ce40d6ff26a8f9, type: 2}
+  fontSize: 14
+  panelColor: {r: 0.1, g: 0.1, b: 0.12, a: 0.85}
+  buttonColor: {r: 0.2, g: 0.2, b: 0.25, a: 1}
+  selectedButtonColor: {r: 0.3, g: 0.5, b: 0.8, a: 1}
+  textColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &285245984
 GameObject:
   m_ObjectHideFlags: 0
@@ -758,6 +783,7 @@ GameObject:
   - component: {fileID: 519420031}
   - component: {fileID: 519420029}
   - component: {fileID: 519420030}
+  - component: {fileID: 519420033}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -883,6 +909,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &519420033
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef17700a8630093439debb46e999dbaf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetCamera: {fileID: 519420031}
+  minZoom: 2
+  maxZoom: 80
+  zoomSpeed: 5
+  zoomSmoothing: 15
+  panButton: 1
+  clampToBounds: 1
+  worldSize: {x: 0, y: 0}
+  boundsPadding: 5
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0

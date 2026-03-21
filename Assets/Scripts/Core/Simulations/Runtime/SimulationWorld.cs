@@ -1,6 +1,7 @@
 ﻿using System;
 using Core.Simulation.Definitions;
 using Core.Simulation.Rendering;
+using Core.Simulation.Interaction;
 using UnityEngine;
 
 namespace Core.Simulation.Runtime
@@ -107,6 +108,10 @@ namespace Core.Simulation.Runtime
 
             gridRenderManager.Initialize(this);
             gridRenderManager.RefreshAll();
+
+            var cam = FindFirstObjectByType<CameraController>();
+            if (cam != null)
+                cam.SetWorldSize(width, height);
 
             _isPaused = startPaused;
             _tickAccumulator = 0f;
@@ -232,6 +237,14 @@ namespace Core.Simulation.Runtime
 
             // 이벤트 기반 통지 — 렌더러가 구독하여 갱신
             OnTickCompleted?.Invoke();
+        }
+        
+        /// <summary>
+        /// 시뮬레이션 속도를 변경한다 (틱/초).
+        /// </summary>
+        public void SetTicksPerSecond(float tps)
+        {
+            ticksPerSecond = Mathf.Max(0.1f, tps);
         }
 
         public ref readonly ElementRuntimeDefinition GetElement(byte id)

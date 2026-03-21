@@ -4,12 +4,39 @@ using UnityEngine;
 
 namespace Core.Simulation.Interaction
 {
+    /// <summary>
+    /// 샌드박스 입력 컨트롤러.
+    ///
+    /// 개선사항:
+    ///   - 브러시 크기 조절 ([ ] 키 또는 Shift+스크롤)
+    ///   - 카메라 팬 중 편집 차단 (CameraController.IsPanning 참조)
+    ///   - 키보드 원소 선택은 유지 (UI 패널과 병행)
+    ///   - 좌클릭: 페인트, 우클릭: 카메라 팬 (EraseCell은 Ctrl+좌클릭으로 이동)
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class SandboxInputController : MonoBehaviour
     {
         [SerializeField] private Camera targetCamera;
         [SerializeField] private GridRenderManager gridRenderManager;
         [SerializeField] private WorldEditService worldEditService;
+        [SerializeField] private CameraController cameraController;
+
+        [Header("Brush")]
+        [Min(1)]
+        [SerializeField] private int brushSize = 1;
+
+        [Tooltip("브러시 최대 크기")]
+        [Min(1)]
+        [SerializeField] private int maxBrushSize = 20;
+
+        /// <summary>현재 브러시 크기. UI에서 참조/설정 가능.</summary>
+        public int BrushSize
+        {
+            get => brushSize;
+            set => brushSize = Mathf.Clamp(value, 1, maxBrushSize);
+        }
+
+        public int MaxBrushSize => maxBrushSize;
 
         private int _lastEditedX = int.MinValue;
         private int _lastEditedY = int.MinValue;
@@ -21,10 +48,15 @@ namespace Core.Simulation.Interaction
                 targetCamera = Camera.main;
 
             if (gridRenderManager == null)
-                gridRenderManager = GetComponentInChildren<GridRenderManager>() ?? GetComponentInParent<GridRenderManager>();
+                gridRenderManager = GetComponentInChildren<GridRenderManager>()
+                    ?? GetComponentInParent<GridRenderManager>();
 
             if (worldEditService == null)
-                worldEditService = GetComponent<WorldEditService>() ?? GetComponentInParent<WorldEditService>();
+                worldEditService = GetComponent<WorldEditService>()
+                    ?? GetComponentInParent<WorldEditService>();
+
+            if (cameraController == null)
+                cameraController = FindFirstObjectByType<CameraController>();
         }
 
         private void Awake()
@@ -33,10 +65,15 @@ namespace Core.Simulation.Interaction
                 targetCamera = Camera.main;
 
             if (gridRenderManager == null)
-                gridRenderManager = GetComponentInChildren<GridRenderManager>() ?? GetComponentInParent<GridRenderManager>();
+                gridRenderManager = GetComponentInChildren<GridRenderManager>()
+                    ?? GetComponentInParent<GridRenderManager>();
 
             if (worldEditService == null)
-                worldEditService = GetComponent<WorldEditService>() ?? GetComponentInParent<WorldEditService>();
+                worldEditService = GetComponent<WorldEditService>()
+                    ?? GetComponentInParent<WorldEditService>();
+
+            if (cameraController == null)
+                cameraController = FindFirstObjectByType<CameraController>();
         }
 
         private void Update()
@@ -45,8 +82,16 @@ namespace Core.Simulation.Interaction
                 return;
 
             HandleSelectionKeys();
+            HandleBrushSizeKeys();
 
             if (!TryGetHoveredCell(out int x, out int y))
+            {
+                ResetLastEdited();
+                return;
+            }
+
+            // 카메라 팬 중에는 셀 편집 차단
+            if (cameraController != null && cameraController.IsPanning)
             {
                 ResetLastEdited();
                 return;
@@ -55,6 +100,10 @@ namespace Core.Simulation.Interaction
             HandleMousePainting(x, y);
             HandleMiddleClickInfo(x, y);
         }
+
+        // ================================================================
+        //  원소 선택 (키보드 — UI 패널과 병행)
+        // ================================================================
 
         private void HandleSelectionKeys()
         {
@@ -72,7 +121,7 @@ namespace Core.Simulation.Interaction
 
             if (Input.GetKeyDown(KeyCode.Alpha5) || Input.GetKeyDown(KeyCode.Keypad5))
                 worldEditService.SetSelectedElement(BuiltInElementIds.Oil);
-            
+
             if (Input.GetKeyDown(KeyCode.Alpha6) || Input.GetKeyDown(KeyCode.Keypad6))
                 worldEditService.SetSelectedElement(BuiltInElementIds.DirtyWater);
 
@@ -81,34 +130,99 @@ namespace Core.Simulation.Interaction
 
             if (Input.GetKeyDown(KeyCode.Alpha8) || Input.GetKeyDown(KeyCode.Keypad8))
                 worldEditService.SetSelectedElement(BuiltInElementIds.Hydrogen);
-            
+
             if (Input.GetKeyDown(KeyCode.Alpha9) || Input.GetKeyDown(KeyCode.Keypad9))
                 worldEditService.SetSelectedElement(BuiltInElementIds.CarbonDioxide);
         }
 
+        // ================================================================
+        //  브러시 크기
+        // ================================================================
+
+        private void HandleBrushSizeKeys()
+        {
+            // [ ] 키로 브러시 크기 조절
+            if (Input.GetKeyDown(KeyCode.LeftBracket))
+                BrushSize--;
+
+            if (Input.GetKeyDown(KeyCode.RightBracket))
+                BrushSize++;
+
+            // Shift + 스크롤로도 브러시 크기 조절
+            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+            {
+                float scroll = Input.mouseScrollDelta.y;
+                if (scroll > 0f) BrushSize++;
+                else if (scroll < 0f) BrushSize--;
+            }
+        }
+
+        // ================================================================
+        //  마우스 페인팅
+        // ================================================================
+
         private void HandleMousePainting(int x, int y)
         {
+            // 좌클릭: 페인트 / Ctrl+좌클릭: 지우기
             if (Input.GetMouseButton(0))
             {
-                if (ShouldSkipRepeatedEdit(x, y, 0))
+                bool isErase = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+
+                if (ShouldSkipRepeatedEdit(x, y, isErase ? 1 : 0))
                     return;
 
-                worldEditService.PaintCell(x, y);
-                RememberLastEdited(x, y, 0);
-                return;
-            }
+                if (isErase)
+                    PaintArea(x, y, BuiltInElementIds.Vacuum);
+                else
+                    PaintArea(x, y, worldEditService.SelectedElementId);
 
-            if (Input.GetMouseButton(1))
-            {
-                if (ShouldSkipRepeatedEdit(x, y, 1))
-                    return;
-
-                worldEditService.EraseCell(x, y);
-                RememberLastEdited(x, y, 1);
+                RememberLastEdited(x, y, isErase ? 1 : 0);
                 return;
             }
 
             ResetLastEdited();
+        }
+
+        private void PaintArea(int centerX, int centerY, byte elementId)
+        {
+            if (brushSize <= 1)
+            {
+                if (elementId == BuiltInElementIds.Vacuum)
+                    worldEditService.EraseCell(centerX, centerY);
+                else
+                    worldEditService.PaintCell(centerX, centerY);
+                return;
+            }
+
+            // 원형 브러시
+            int radius = brushSize / 2;
+            int radiusSq = radius * radius;
+            byte savedElement = worldEditService.SelectedElementId;
+
+            // 임시로 원소 설정 (PaintCell이 selectedElement를 사용하므로)
+            if (elementId != BuiltInElementIds.Vacuum)
+                worldEditService.SetSelectedElement(elementId);
+
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    if (dx * dx + dy * dy > radiusSq)
+                        continue;
+
+                    int tx = centerX + dx;
+                    int ty = centerY + dy;
+
+                    if (elementId == BuiltInElementIds.Vacuum)
+                        worldEditService.EraseCell(tx, ty);
+                    else
+                        worldEditService.PaintCell(tx, ty);
+                }
+            }
+
+            // 원소 복원
+            if (elementId != BuiltInElementIds.Vacuum && savedElement != elementId)
+                worldEditService.SetSelectedElement(savedElement);
         }
 
         private void HandleMiddleClickInfo(int x, int y)
@@ -116,6 +230,10 @@ namespace Core.Simulation.Interaction
             if (Input.GetMouseButtonDown(2))
                 worldEditService.LogCellInfo(x, y);
         }
+
+        // ================================================================
+        //  좌표 변환
+        // ================================================================
 
         private bool TryGetHoveredCell(out int x, out int y)
         {
@@ -127,13 +245,18 @@ namespace Core.Simulation.Interaction
             if (mouse.x < 0 || mouse.y < 0 || mouse.x > Screen.width || mouse.y > Screen.height)
                 return false;
 
-            float zDistance = Mathf.Abs(targetCamera.transform.position.z - gridRenderManager.transform.position.z);
+            float zDistance = Mathf.Abs(targetCamera.transform.position.z
+                - gridRenderManager.transform.position.z);
 
             Vector3 worldPoint = targetCamera.ScreenToWorldPoint(
                 new Vector3(mouse.x, mouse.y, zDistance));
 
             return gridRenderManager.TryWorldToCell(worldPoint, out x, out y);
         }
+
+        // ================================================================
+        //  중복 편집 방지
+        // ================================================================
 
         private bool ShouldSkipRepeatedEdit(int x, int y, int button)
         {
