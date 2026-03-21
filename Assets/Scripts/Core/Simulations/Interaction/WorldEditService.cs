@@ -10,7 +10,7 @@ namespace Core.Simulation.Interaction
     public sealed class WorldEditService : MonoBehaviour
     {
         [SerializeField] private SimulationWorld simulationWorld;
-        [SerializeField] private GridRenderer gridRenderer;
+        [SerializeField] private GridRenderManager gridRenderManager;
         [SerializeField] private byte selectedElementId = BuiltInElementIds.Sand;
 
         public byte SelectedElementId => selectedElementId;
@@ -20,8 +20,8 @@ namespace Core.Simulation.Interaction
             if (simulationWorld == null)
                 simulationWorld = GetComponent<SimulationWorld>() ?? GetComponentInParent<SimulationWorld>();
 
-            if (gridRenderer == null)
-                gridRenderer = GetComponentInChildren<GridRenderer>() ?? GetComponentInParent<GridRenderer>();
+            if (gridRenderManager == null)
+                gridRenderManager = GetComponentInChildren<GridRenderManager>() ?? GetComponentInParent<GridRenderManager>();
         }
 
         private void Awake()
@@ -29,8 +29,8 @@ namespace Core.Simulation.Interaction
             if (simulationWorld == null)
                 simulationWorld = GetComponent<SimulationWorld>() ?? GetComponentInParent<SimulationWorld>();
 
-            if (gridRenderer == null)
-                gridRenderer = GetComponentInChildren<GridRenderer>() ?? GetComponentInParent<GridRenderer>();
+            if (gridRenderManager == null)
+                gridRenderManager = GetComponentInChildren<GridRenderManager>() ?? GetComponentInParent<GridRenderManager>();
         }
 
         public bool SetSelectedElement(byte elementId)
@@ -84,7 +84,7 @@ namespace Core.Simulation.Interaction
                 index,
                 newCell);
 
-            gridRenderer.MarkDirty();
+            gridRenderManager.MarkDirty();
 
             return true;
         }
@@ -112,7 +112,7 @@ namespace Core.Simulation.Interaction
 
         private bool IsReady()
         {
-            if (simulationWorld == null || gridRenderer == null)
+            if (simulationWorld == null || gridRenderManager == null)
             {
                 Debug.LogWarning("WorldEditService is missing references.", this);
                 return false;

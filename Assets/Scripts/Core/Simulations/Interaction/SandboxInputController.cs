@@ -8,7 +8,7 @@ namespace Core.Simulation.Interaction
     public sealed class SandboxInputController : MonoBehaviour
     {
         [SerializeField] private Camera targetCamera;
-        [SerializeField] private GridRenderer gridRenderer;
+        [SerializeField] private GridRenderManager gridRenderManager;
         [SerializeField] private WorldEditService worldEditService;
 
         private int _lastEditedX = int.MinValue;
@@ -20,8 +20,8 @@ namespace Core.Simulation.Interaction
             if (targetCamera == null)
                 targetCamera = Camera.main;
 
-            if (gridRenderer == null)
-                gridRenderer = GetComponentInChildren<GridRenderer>() ?? GetComponentInParent<GridRenderer>();
+            if (gridRenderManager == null)
+                gridRenderManager = GetComponentInChildren<GridRenderManager>() ?? GetComponentInParent<GridRenderManager>();
 
             if (worldEditService == null)
                 worldEditService = GetComponent<WorldEditService>() ?? GetComponentInParent<WorldEditService>();
@@ -32,8 +32,8 @@ namespace Core.Simulation.Interaction
             if (targetCamera == null)
                 targetCamera = Camera.main;
 
-            if (gridRenderer == null)
-                gridRenderer = GetComponentInChildren<GridRenderer>() ?? GetComponentInParent<GridRenderer>();
+            if (gridRenderManager == null)
+                gridRenderManager = GetComponentInChildren<GridRenderManager>() ?? GetComponentInParent<GridRenderManager>();
 
             if (worldEditService == null)
                 worldEditService = GetComponent<WorldEditService>() ?? GetComponentInParent<WorldEditService>();
@@ -41,7 +41,7 @@ namespace Core.Simulation.Interaction
 
         private void Update()
         {
-            if (targetCamera == null || gridRenderer == null || worldEditService == null)
+            if (targetCamera == null || gridRenderManager == null || worldEditService == null)
                 return;
 
             HandleSelectionKeys();
@@ -127,12 +127,12 @@ namespace Core.Simulation.Interaction
             if (mouse.x < 0 || mouse.y < 0 || mouse.x > Screen.width || mouse.y > Screen.height)
                 return false;
 
-            float zDistance = Mathf.Abs(targetCamera.transform.position.z - gridRenderer.transform.position.z);
+            float zDistance = Mathf.Abs(targetCamera.transform.position.z - gridRenderManager.transform.position.z);
 
             Vector3 worldPoint = targetCamera.ScreenToWorldPoint(
                 new Vector3(mouse.x, mouse.y, zDistance));
 
-            return gridRenderer.TryWorldToCell(worldPoint, out x, out y);
+            return gridRenderManager.TryWorldToCell(worldPoint, out x, out y);
         }
 
         private bool ShouldSkipRepeatedEdit(int x, int y, int button)

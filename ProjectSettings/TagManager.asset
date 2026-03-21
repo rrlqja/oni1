@@ -2,7 +2,7 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 2
+  serializedVersion: 3
   tags: []
   layers:
   - Default
@@ -41,3 +41,23 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Background
+    uniqueID: 3757208151
+    locked: 0
+  - name: Solid
+    uniqueID: 1868422241
+    locked: 0
+  - name: Liquid
+    uniqueID: 4161641915
+    locked: 0
+  - name: GasOverlay
+    uniqueID: 1977706515
+    locked: 0
+  - name: DebugOverlay
+    uniqueID: 8947505
+    locked: 0
+  - name: UI
+    uniqueID: 3974724045
+    locked: 0
+  m_RenderingLayers:
+  - Default

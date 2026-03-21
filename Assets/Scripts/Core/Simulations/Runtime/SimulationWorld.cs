@@ -19,7 +19,7 @@ namespace Core.Simulation.Runtime
         [SerializeField] private int height = 64;
 
         [Header("View")]
-        [SerializeField] private GridRenderer gridRenderer;
+        [SerializeField] private GridRenderManager gridRenderManager;
 
         [Header("Simulation")]
         [Min(0.1f)]
@@ -62,8 +62,8 @@ namespace Core.Simulation.Runtime
 
         private void Reset()
         {
-            if (gridRenderer == null)
-                gridRenderer = GetComponentInChildren<GridRenderer>();
+            if (gridRenderManager == null)
+                gridRenderManager = GetComponentInChildren<GridRenderManager>();
         }
 
         private void OnEnable()
@@ -75,8 +75,8 @@ namespace Core.Simulation.Runtime
         {
             Debug.Log("SimulationWorld Awake START", this);
 
-            if (gridRenderer == null)
-                gridRenderer = GetComponentInChildren<GridRenderer>();
+            if (gridRenderManager == null)
+                gridRenderManager = GetComponentInChildren<GridRenderManager>();
 
             if (elementDatabase == null)
             {
@@ -85,9 +85,9 @@ namespace Core.Simulation.Runtime
                 return;
             }
 
-            if (gridRenderer == null)
+            if (gridRenderManager == null)
             {
-                Debug.LogError("SimulationWorld: GridRenderer is not assigned and was not found in children.", this);
+                Debug.LogError("SimulationWorld: GridRenderManager is not assigned and was not found in children.", this);
                 enabled = false;
                 return;
             }
@@ -105,8 +105,8 @@ namespace Core.Simulation.Runtime
             GenerateWorld();
             Debug.Log("World generated", this);
 
-            gridRenderer.Initialize(this);
-            gridRenderer.RefreshAll();
+            gridRenderManager.Initialize(this);
+            gridRenderManager.RefreshAll();
 
             _isPaused = startPaused;
             _tickAccumulator = 0f;
@@ -168,11 +168,11 @@ namespace Core.Simulation.Runtime
         [ContextMenu("Refresh Renderer")]
         public void RefreshRenderer()
         {
-            if (gridRenderer == null || Grid == null || ElementRegistry == null)
+            if (gridRenderManager == null || Grid == null || ElementRegistry == null)
                 return;
 
-            gridRenderer.Initialize(this);
-            gridRenderer.RefreshAll();
+            gridRenderManager.Initialize(this);
+            gridRenderManager.RefreshAll();
         }
 
         public void RegenerateAndRefresh()
