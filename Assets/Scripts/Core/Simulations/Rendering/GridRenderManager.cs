@@ -23,6 +23,7 @@ namespace Core.Simulation.Rendering
         [SerializeField] private LiquidMeshRenderer liquidRenderer;
         [SerializeField] private GasOverlayRenderer gasRenderer;
         [SerializeField] private DebugOverlayRenderer debugOverlayRenderer;
+        [SerializeField] private FallingEntityRenderer fallingEntityRenderer;
 
         private IGridLayerRenderer[] _renderers;
         private DirtyTracker _dirtyTracker;
@@ -54,6 +55,9 @@ namespace Core.Simulation.Rendering
 
             if (debugOverlayRenderer == null)
                 debugOverlayRenderer = GetComponentInChildren<DebugOverlayRenderer>();
+
+            if (fallingEntityRenderer == null)
+                fallingEntityRenderer = GetComponentInChildren<FallingEntityRenderer>();
         }
 
         public void Initialize(SimulationWorld world)
@@ -76,6 +80,9 @@ namespace Core.Simulation.Rendering
                 gasRenderer,
                 debugOverlayRenderer
             };
+
+            if (fallingEntityRenderer != null)
+                fallingEntityRenderer.Initialize(simulationWorld);
 
             // DirtyTracker 초기화
             int cellCount = world.Grid.Width * world.Grid.Height;

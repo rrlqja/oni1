@@ -32,6 +32,8 @@ namespace Core.Simulation.Runtime
 
         private SimulationRunner _simulationRunner;
 
+        public SimulationRunner Runner => _simulationRunner;
+
         public ElementRegistry ElementRegistry { get; private set; }
         public WorldGrid Grid { get; private set; }
 

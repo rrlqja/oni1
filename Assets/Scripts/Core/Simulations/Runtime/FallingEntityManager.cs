@@ -8,16 +8,25 @@ namespace Core.Simulation.Runtime
     /// <summary>
     /// 투사체 낙하 엔티티 관리자.
     ///
+    /// 중력 가속도: 매 틱 velocity += gravity.
+    ///   초기 velocity = 0 → 첫 틱 이동거리 0.5셀 → 점점 빨라짐.
+    ///   maxVelocity로 상한 제한 (터미널 벨로시티).
+    ///
     /// 착지 규칙:
-    ///   FallingSolid: 진공/기체/액체를 모두 통과. 고체 위에서만 착지.
-    ///                 착지점에 액체가 있으면 밀어내고 그 자리에 배치.
-    ///   Liquid: 진공/기체를 통과. 고체 또는 액체 표면 위에 착지.
+    ///   FallingSolid: 진공/기체/액체 통과. 고체 위 착지. 액체 밀어내기.
+    ///   Liquid: 진공/기체 통과. 고체/액체 표면 위 착지.
     /// </summary>
     public sealed class FallingEntityManager
     {
         private readonly WorldGrid _grid;
         private readonly ElementRegistry _registry;
         private readonly List<FallingEntity> _entities = new(64);
+
+        /// <summary>중력 가속도 (셀/틱²). 매 틱 velocity에 더해진다.</summary>
+        private const float GRAVITY = 0.5f;
+
+        /// <summary>최대 낙하 속도 (셀/틱).</summary>
+        private const float MAX_VELOCITY = 6f;
 
         public IReadOnlyList<FallingEntity> ActiveEntities => _entities;
         public int Count => _entities.Count;
@@ -31,12 +40,13 @@ namespace Core.Simulation.Runtime
         public void Spawn(byte elementId, int mass, short temperature,
             int cellX, int cellY, int fallSpeed)
         {
+            // fallSpeed 파라미터는 하위호환용, 실제론 가속도 사용
             if (mass <= 0)
                 return;
 
             _entities.Add(new FallingEntity(
                 elementId, mass, temperature,
-                cellX, cellY, fallSpeed));
+                cellX, cellY));
         }
 
         public void ProcessTick()
@@ -71,10 +81,22 @@ namespace Core.Simulation.Runtime
 
         private bool TryMoveAndLand(ref FallingEntity entity)
         {
+            // 이전 Y 저장 (렌더링 보간용)
+            entity.PreviousY = entity.CurrentY;
+
+            // 중력 가속: velocity 증가
+            entity.Velocity += GRAVITY;
+            if (entity.Velocity > MAX_VELOCITY)
+                entity.Velocity = MAX_VELOCITY;
+
             int x = entity.CellX;
             int startY = (int)entity.CurrentY;
-            int targetY = startY - entity.FallSpeed;
 
+            // 이번 틱 이동 거리 (실수 → 정수 셀 수)
+            float moveDistance = entity.Velocity;
+            int cellsToMove = Math.Max(1, (int)moveDistance);
+
+            int targetY = startY - cellsToMove;
             if (targetY < 0)
                 targetY = 0;
 
@@ -103,9 +125,11 @@ namespace Core.Simulation.Runtime
                 switch (result)
                 {
                     case LandingResult.LandAbove:
+                        entity.CurrentY = y + 1;
                         return LandAtPosition(ref entity, x, y + 1, isSolid);
 
                     case LandingResult.Merge:
+                        entity.CurrentY = y;
                         return MergeInto(ref entity, x, y, isSolid);
 
                     case LandingResult.PassThrough:
@@ -113,6 +137,7 @@ namespace Core.Simulation.Runtime
                 }
             }
 
+            // 착지점 없음 → 계속 낙하
             entity.CurrentY = targetY;
             return false;
         }
@@ -135,15 +160,12 @@ namespace Core.Simulation.Runtime
             in SimCell belowCell,
             bool entityIsSolid)
         {
-            // 진공 → 통과
             if (belowDef.BehaviorType == ElementBehaviorType.Vacuum)
                 return LandingResult.PassThrough;
 
-            // 기체 → 통과
             if (belowDef.BehaviorType == ElementBehaviorType.Gas)
                 return LandingResult.PassThrough;
 
-            // ── 고체 만남 ──
             if (belowDef.IsSolid)
             {
                 if (belowCell.ElementId == entity.ElementId &&
@@ -153,16 +175,11 @@ namespace Core.Simulation.Runtime
                 return LandingResult.LandAbove;
             }
 
-            // ── 액체 만남 ──
             if (belowDef.BehaviorType == ElementBehaviorType.Liquid)
             {
                 if (entityIsSolid)
-                {
-                    // FallingSolid → 액체를 통과 (바닥까지 가라앉음)
                     return LandingResult.PassThrough;
-                }
 
-                // Liquid → Liquid
                 if (belowCell.ElementId == entity.ElementId)
                 {
                     if (belowCell.Mass < belowDef.MaxMass)
@@ -171,7 +188,6 @@ namespace Core.Simulation.Runtime
                     return LandingResult.LandAbove;
                 }
 
-                // 다른 액체 → 위에 착지
                 return LandingResult.LandAbove;
             }
 
@@ -182,11 +198,6 @@ namespace Core.Simulation.Runtime
         //  착지 실행
         // ================================================================
 
-        /// <summary>
-        /// 지정 위치에 착지한다.
-        /// FallingSolid: 착지점에 액체/기체가 있으면 밀어내고 배치.
-        /// Liquid: 빈 셀을 찾아 배치.
-        /// </summary>
         private bool LandAtPosition(ref FallingEntity entity, int x, int y, bool isSolid)
         {
             if (!_grid.InBounds(x, y))
@@ -201,23 +212,17 @@ namespace Core.Simulation.Runtime
                 return LandLiquid(ref entity, x, y);
         }
 
-        /// <summary>
-        /// FallingSolid 착지: 착지점에 뭐가 있든 밀어내고 배치.
-        /// 모래가 물속 바닥에 도달하면 물을 밀어내고 그 자리에 안착한다.
-        /// </summary>
         private bool LandSolid(ref FallingEntity entity, int x, int y)
         {
             int index = _grid.ToIndex(x, y);
             SimCell existing = _grid.GetCellByIndex(index);
 
-            // 빈 셀 → 바로 배치
             if (existing.ElementId == BuiltInElementIds.Vacuum)
             {
                 PlaceEntity(ref entity, x, y);
                 return true;
             }
 
-            // 같은 원소 + 여유 → Merge
             if (existing.ElementId == entity.ElementId)
             {
                 ref readonly ElementRuntimeDefinition def = ref _registry.Get(existing.ElementId);
@@ -225,15 +230,12 @@ namespace Core.Simulation.Runtime
                     return MergeInto(ref entity, x, y, true);
             }
 
-            // 그 외 (액체, 기체 등) → 밀어내고 배치
-            // DisplacementResolver로 기존 원소를 인접 셀로 이동
             if (DisplacementResolver.TryDisplace(_grid, _registry, index))
             {
                 PlaceEntity(ref entity, x, y);
                 return true;
             }
 
-            // 밀어내기 실패 → 위로 올라가며 빈 셀 찾기 (폴백)
             for (int tryY = y + 1; tryY < _grid.Height; tryY++)
             {
                 SimCell cell = _grid.GetCell(x, tryY);
@@ -255,16 +257,12 @@ namespace Core.Simulation.Runtime
                 }
             }
 
-            // 완전 실패
             entity.IsActive = false;
             UnityEngine.Debug.LogWarning(
                 $"[FallingEntity] Solid failed to land at ({x},{y}). Mass lost!");
             return true;
         }
 
-        /// <summary>
-        /// Liquid 착지: 빈 셀을 찾거나 기체를 밀어내고 배치.
-        /// </summary>
         private bool LandLiquid(ref FallingEntity entity, int x, int y)
         {
             for (int tryY = y; tryY < _grid.Height; tryY++)
@@ -274,14 +272,12 @@ namespace Core.Simulation.Runtime
 
                 SimCell existing = _grid.GetCell(x, tryY);
 
-                // 빈 셀 → 배치
                 if (existing.ElementId == BuiltInElementIds.Vacuum)
                 {
                     PlaceEntity(ref entity, x, tryY);
                     return true;
                 }
 
-                // 같은 원소 + 여유 → Merge
                 if (existing.ElementId == entity.ElementId)
                 {
                     ref readonly ElementRuntimeDefinition def = ref _registry.Get(existing.ElementId);
@@ -289,7 +285,6 @@ namespace Core.Simulation.Runtime
                         return MergeInto(ref entity, x, tryY, false);
                 }
 
-                // 기체 → 밀어내고 배치
                 ref readonly ElementRuntimeDefinition existingDef = ref _registry.Get(existing.ElementId);
                 if (existingDef.BehaviorType == ElementBehaviorType.Gas)
                 {
@@ -302,7 +297,6 @@ namespace Core.Simulation.Runtime
                 }
             }
 
-            // 폴백: 강제 배치
             if (_grid.InBounds(x, y))
             {
                 PlaceEntity(ref entity, x, y);
@@ -358,7 +352,6 @@ namespace Core.Simulation.Runtime
                 return true;
             }
 
-            // 넘치는 분량 → 위에 배치
             return LandAtPosition(ref entity, x, y + 1, isSolid);
         }
     }

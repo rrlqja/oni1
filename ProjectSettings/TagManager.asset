@@ -47,6 +47,9 @@ TagManager:
   - name: Solid
     uniqueID: 1868422241
     locked: 0
+  - name: Projectile
+    uniqueID: 2267383187
+    locked: 0
   - name: Liquid
     uniqueID: 4161641915
     locked: 0
