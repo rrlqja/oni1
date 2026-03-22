@@ -189,7 +189,7 @@ MonoBehaviour:
   targetCamera: {fileID: 519420031}
   gridRenderManager: {fileID: 1855277519}
   worldEditService: {fileID: 204233353}
-  cameraController: {fileID: 0}
+  cameraController: {fileID: 519420033}
   brushSize: 1
   maxBrushSize: 20
 --- !u!114 &204233353
