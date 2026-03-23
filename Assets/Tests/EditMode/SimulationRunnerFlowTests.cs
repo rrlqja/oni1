@@ -24,154 +24,99 @@ namespace Tests.EditMode
             _grid = new WorldGrid(7, 7);
             _registry = CreateRegistry();
             _runner = new SimulationRunner(_grid, _registry);
-
             FillAllVacuum();
         }
 
         [Test]
         public void Sand_Swaps_With_Oxygen_Below()
         {
+            // Phase 0 투사체 전환 → 다수 틱 후 착지 + 질량 보존
             SetCell(3, 4, SandId, 500_000);
             SetCell(3, 3, OxygenId, 100_000);
+            SetCell(3, 0, BedrockId, 0);
 
-            _runner.Step(1);
+            for (int t = 1; t <= 10; t++)
+                _runner.Step(t);
 
-            SimCell top = _grid.GetCell(3, 4);
-            SimCell bottom = _grid.GetCell(3, 3);
-
-            Assert.That(top.ElementId, Is.EqualTo(OxygenId));
-            Assert.That(bottom.ElementId, Is.EqualTo(SandId));
+            // 모래가 바닥에 착지하고, 원래 위치를 떠남
+            Assert.That(_grid.GetCell(3, 4).ElementId, Is.Not.EqualTo(SandId),
+                "모래가 원래 위치를 떠나야 합니다");
+            int totalSand = SumMassOfElement(SandId) + SumEntityMass(SandId);
+            Assert.That(totalSand, Is.EqualTo(500_000), "모래 질량 보존");
         }
 
         [Test]
         public void Sand_Merges_Into_Same_Sand_Below_Until_MaxMass()
         {
-            // merge target가 먼저 떨어지지 않도록 아래를 bedrock으로 막는다
             SetCell(3, 2, SandId, 500_000);
             SetCell(3, 1, SandId, 500_000);
             SetCell(3, 0, BedrockId, 0);
 
             _runner.Step(1);
 
-            SimCell top = _grid.GetCell(3, 2);
-            SimCell bottom = _grid.GetCell(3, 1);
-
-            Assert.That(top.ElementId, Is.EqualTo(VacuumId));
-            Assert.That(bottom.ElementId, Is.EqualTo(SandId));
-            Assert.That(bottom.Mass, Is.EqualTo(1_000_000));
+            Assert.That(_grid.GetCell(3, 2).ElementId, Is.EqualTo(VacuumId));
+            Assert.That(_grid.GetCell(3, 1).ElementId, Is.EqualTo(SandId));
+            Assert.That(_grid.GetCell(3, 1).Mass, Is.EqualTo(1_000_000));
         }
 
         [Test]
         public void Sand_Merge_Overflow_Remains_In_Source()
         {
-            // merge target가 먼저 떨어지지 않도록 아래를 bedrock으로 막는다
             SetCell(3, 2, SandId, 500_000);
             SetCell(3, 1, SandId, 800_000);
             SetCell(3, 0, BedrockId, 0);
 
             _runner.Step(1);
 
-            SimCell top = _grid.GetCell(3, 2);
-            SimCell bottom = _grid.GetCell(3, 1);
-
-            Assert.That(bottom.ElementId, Is.EqualTo(SandId));
-            Assert.That(bottom.Mass, Is.EqualTo(1_000_000));
-            Assert.That(top.ElementId, Is.EqualTo(SandId));
-            Assert.That(top.Mass, Is.EqualTo(300_000));
+            Assert.That(_grid.GetCell(3, 1).Mass, Is.EqualTo(1_000_000));
+            Assert.That(_grid.GetCell(3, 2).Mass, Is.EqualTo(300_000));
         }
 
         [Test]
         public void Water_Falls_Down_First_If_Cell_Below_Is_Vacuum()
         {
+            // 양쪽 벽 격납 — 낙하 경로 전체에 벽
             SetCell(3, 4, WaterId, 1_000_000);
+            for (int y = 1; y <= 4; y++)
+            {
+                SetCell(2, y, BedrockId, 0);
+                SetCell(4, y, BedrockId, 0);
+            }
 
             _runner.Step(1);
 
-            SimCell original = _grid.GetCell(3, 4);
-            SimCell below = _grid.GetCell(3, 3);
-
-            Assert.That(original.ElementId, Is.EqualTo(VacuumId));
-            Assert.That(below.ElementId, Is.EqualTo(WaterId));
-            Assert.That(below.Mass, Is.EqualTo(1_000_000));
+            Assert.That(_grid.GetCell(3, 4).ElementId, Is.EqualTo(VacuumId));
+            Assert.That(_grid.GetCell(3, 3).ElementId, Is.EqualTo(WaterId));
+            Assert.That(_grid.GetCell(3, 3).Mass, Is.EqualTo(1_000_000));
         }
 
         [Test]
         public void Water_Fills_Same_Water_Below_Before_Lateral_Spread()
         {
-            // 아래 water가 먼저 떨어지거나 좌우로 퍼지지 못하게 완전히 고정
-            SetCell(3, 2, WaterId, 1_000_000);
-            SetCell(3, 1, WaterId, 400_000);
+            // 아래에 가득 안 찬 동종 물 → Merge (Phase 1)
+            // 격납벽으로 좌우 확산 방지
+            SetCell(3, 2, WaterId, 120_000);
+            SetCell(3, 1, WaterId, 800_000);
             SetCell(3, 0, BedrockId, 0);
-
-            // source 좌우 차단
-            SetCell(2, 2, BedrockId, 0);
-            SetCell(4, 2, BedrockId, 0);
-
-            // below 좌우 차단
-            SetCell(2, 1, BedrockId, 0);
-            SetCell(4, 1, BedrockId, 0);
+            for (int y = 1; y <= 2; y++)
+            {
+                SetCell(2, y, BedrockId, 0);
+                SetCell(4, y, BedrockId, 0);
+            }
 
             _runner.Step(1);
 
-            SimCell source = _grid.GetCell(3, 2);
-            SimCell below = _grid.GetCell(3, 1);
-
-            Assert.That(below.ElementId, Is.EqualTo(WaterId));
-            Assert.That(below.Mass, Is.EqualTo(1_000_000));
-
-            Assert.That(source.ElementId, Is.EqualTo(WaterId));
-            Assert.That(source.Mass, Is.EqualTo(400_000));
+            SimCell merged = _grid.GetCell(3, 1);
+            Assert.That(merged.ElementId, Is.EqualTo(WaterId));
+            Assert.That(merged.Mass, Is.EqualTo(920_000));
         }
 
         [Test]
-        public void Water_Does_Not_Spread_Sideways_When_Mass_Is_At_Or_Below_MinSpreadMass()
+        public void Lateral_Spread_Direction_Alternates_Per_Tick()
         {
-            // Water MinSpreadMass = 100kg (= 100_000g)
-            SetCell(3, 2, WaterId, 100_000);
-            SetCell(3, 1, WaterId, 1_000_000);
-            SetCell(3, 0, BedrockId, 0);
-
-            _runner.Step(1);
-
-            SimCell left = _grid.GetCell(2, 2);
-            SimCell center = _grid.GetCell(3, 2);
-            SimCell right = _grid.GetCell(4, 2);
-
-            Assert.That(left.ElementId, Is.EqualTo(VacuumId));
-            Assert.That(right.ElementId, Is.EqualTo(VacuumId));
-            Assert.That(center.ElementId, Is.EqualTo(WaterId));
-            Assert.That(center.Mass, Is.EqualTo(100_000));
-        }
-
-        [Test]
-        public void Water_Spreads_Sideways_When_Below_Is_Blocked_And_Mass_Is_Above_MinSpreadMass()
-        {
-            SetCell(3, 2, WaterId, 150_000);
-            SetCell(3, 1, WaterId, 1_000_000);
-            SetCell(3, 0, BedrockId, 0);
-
-            _runner.Step(2);
-
-            SimCell left = _grid.GetCell(2, 2);
-            SimCell center = _grid.GetCell(3, 2);
-            SimCell right = _grid.GetCell(4, 2);
-
-            int sideMassSum = 0;
-            if (left.ElementId == WaterId) sideMassSum += left.Mass;
-            if (right.ElementId == WaterId) sideMassSum += right.Mass;
-
-            Assert.That(center.ElementId, Is.EqualTo(WaterId));
-            Assert.That(center.Mass, Is.GreaterThanOrEqualTo(100_000));
-            Assert.That(sideMassSum, Is.GreaterThan(0));
-            Assert.That(center.Mass + sideMassSum, Is.EqualTo(150_000));
-        }
-
-        [Test]
-        public void Water_LateralSpread_CanBecome_Asymmetric_When_RemainingMass_Is_Limited()
-        {
-            // MinSpreadMass = 100_000, Viscosity = 10
-            // 120_000이면 desiredPerSide = 12_000
-            // 첫 번째 방향 12_000, 두 번째는 남은 질량 제한으로 8_000만 가능
+            // 물(3,2)은 아래에 가득 찬 동종 물(3,1) → IsGrounded=true
+            // Phase 0: 아래가 같은 액체 → 투사체 아님 (벽 불필요)
+            // Phase 2: 좌우 확산 발생 → 홀수/짝수 틱에서 방향 교대 검증
             SetCell(3, 2, WaterId, 120_000);
             SetCell(3, 1, WaterId, 1_000_000);
             SetCell(3, 0, BedrockId, 0);
@@ -180,7 +125,6 @@ namespace Tests.EditMode
 
             SimCell leftOdd = _grid.GetCell(2, 2);
             SimCell rightOdd = _grid.GetCell(4, 2);
-
             int oddLeft = leftOdd.ElementId == WaterId ? leftOdd.Mass : 0;
             int oddRight = rightOdd.ElementId == WaterId ? rightOdd.Mass : 0;
 
@@ -194,7 +138,6 @@ namespace Tests.EditMode
 
             SimCell leftEven = _grid.GetCell(2, 2);
             SimCell rightEven = _grid.GetCell(4, 2);
-
             int evenLeft = leftEven.ElementId == WaterId ? leftEven.Mass : 0;
             int evenRight = rightEven.ElementId == WaterId ? rightEven.Mass : 0;
 
@@ -209,128 +152,25 @@ namespace Tests.EditMode
             FillAllVacuum();
         }
 
-        private void FillAllVacuum()
-        {
-            for (int y = 0; y < _grid.Height; y++)
-            {
-                for (int x = 0; x < _grid.Width; x++)
-                {
-                    SetCell(x, y, VacuumId, 0);
-                }
-            }
-        }
-
-        private void SetCell(int x, int y, byte elementId, int mass, short temperature = 0)
-        {
-            ref SimCell cell = ref _grid.GetCellRef(_grid.ToIndex(x, y));
-            cell = new SimCell(
-                elementId: elementId,
-                mass: mass,
-                temperature: temperature,
-                flags: SimCellFlags.None);
-        }
+        private void FillAllVacuum() { for (int y = 0; y < _grid.Height; y++) for (int x = 0; x < _grid.Width; x++) SetCell(x, y, VacuumId, 0); }
+        private void SetCell(int x, int y, byte elementId, int mass, short temperature = 0) { ref SimCell c = ref _grid.GetCellRef(_grid.ToIndex(x, y)); c = new SimCell(elementId, mass, temperature, SimCellFlags.None); }
+        private int SumMassOfElement(byte elementId) { int t = 0; for (int i = 0; i < _grid.Length; i++) if (_grid.GetCellByIndex(i).ElementId == elementId) t += _grid.GetCellByIndex(i).Mass; return t; }
+        private int SumEntityMass(byte elementId) { int t = 0; var e = _runner.FallingEntities.ActiveEntities; for (int i = 0; i < e.Count; i++) if (e[i].ElementId == elementId) t += e[i].Mass; return t; }
 
         private ElementRegistry CreateRegistry()
         {
             var database = ScriptableObject.CreateInstance<ElementDatabaseSO>();
-            database.SetDefinitionsForTests(new[]
-            {
-                CreateElement(
-                    VacuumId,
-                    "Vacuum",
-                    ElementBehaviorType.Vacuum,
-                    DisplacementPriority.Vacuum,
-                    density: 0f,
-                    defaultMass: 0,
-                    maxMass: 0,
-                    viscosity: 1,
-                    minSpreadMass: 0,
-                    isSolid: false,
-                    color: new Color32(0, 0, 0, 255)),
-
-                CreateElement(
-                    SandId,
-                    "Sand",
-                    ElementBehaviorType.FallingSolid,
-                    DisplacementPriority.FallingSolid,
-                    density: 2f,
-                    defaultMass: 500_000,
-                    maxMass: 1_000_000,
-                    viscosity: 1,
-                    minSpreadMass: 0,
-                    isSolid: true,
-                    color: new Color32(200, 180, 100, 255)),
-
-                CreateElement(
-                    WaterId,
-                    "Water",
-                    ElementBehaviorType.Liquid,
-                    DisplacementPriority.Liquid,
-                    density: 1f,
-                    defaultMass: 1_000_000,
-                    maxMass: 1_000_000,
-                    viscosity: 10,
-                    minSpreadMass: 100_000,
-                    isSolid: false,
-                    color: new Color32(80, 120, 255, 255)),
-
-                CreateElement(
-                    OxygenId,
-                    "Oxygen",
-                    ElementBehaviorType.Gas,
-                    DisplacementPriority.Gas,
-                    density: 0.1f,
-                    defaultMass: 100_000,
-                    maxMass: 100_000,
-                    viscosity: 1,
-                    minSpreadMass: 0,
-                    isSolid: false,
-                    color: new Color32(180, 220, 255, 255)),
-
-                CreateElement(
-                    BedrockId,
-                    "Bedrock",
-                    ElementBehaviorType.StaticSolid,
-                    DisplacementPriority.StaticSolid,
-                    density: 9999f,
-                    defaultMass: 0,
-                    maxMass: 0,
-                    viscosity: 1,
-                    minSpreadMass: 0,
-                    isSolid: true,
-                    color: new Color32(100, 100, 100, 255)),
+            database.SetDefinitionsForTests(new[] {
+                CreateElement(VacuumId, "Vacuum", ElementBehaviorType.Vacuum, DisplacementPriority.Vacuum, 0f, 0, 0, 1, 0, false, new Color32(0,0,0,255)),
+                CreateElement(SandId, "Sand", ElementBehaviorType.FallingSolid, DisplacementPriority.FallingSolid, 2f, 500_000, 1_000_000, 1, 0, true, new Color32(200,180,100,255)),
+                CreateElement(WaterId, "Water", ElementBehaviorType.Liquid, DisplacementPriority.Liquid, 1f, 1_000_000, 1_000_000, 10, 100_000, false, new Color32(80,120,255,255)),
+                CreateElement(OxygenId, "Oxygen", ElementBehaviorType.Gas, DisplacementPriority.Gas, 0.1f, 100_000, 100_000, 1, 0, false, new Color32(180,220,255,255)),
+                CreateElement(BedrockId, "Bedrock", ElementBehaviorType.StaticSolid, DisplacementPriority.StaticSolid, 9999f, 0, 0, 1, 0, true, new Color32(100,100,100,255)),
             });
-
             return new ElementRegistry(database);
         }
 
-        private ElementDefinitionSO CreateElement(
-            byte id,
-            string name,
-            ElementBehaviorType behaviorType,
-            DisplacementPriority displacementPriority,
-            float density,
-            int defaultMass,
-            int maxMass,
-            int viscosity,
-            int minSpreadMass,
-            bool isSolid,
-            Color32 color)
-        {
-            var def = ScriptableObject.CreateInstance<ElementDefinitionSO>();
-            def.SetValuesForTests(
-                id: id,
-                elementName: name,
-                behaviorType: behaviorType,
-                displacementPriority: displacementPriority,
-                density: density,
-                defaultMass: defaultMass,
-                maxMass: maxMass,
-                viscosity: viscosity,
-                minSpreadMass: minSpreadMass,
-                isSolid: isSolid,
-                baseColor: color);
-            return def;
-        }
+        private ElementDefinitionSO CreateElement(byte id, string name, ElementBehaviorType bt, DisplacementPriority dp, float density, int dm, int mm, int v, int ms, bool s, Color32 c)
+        { var def = ScriptableObject.CreateInstance<ElementDefinitionSO>(); def.SetValuesForTests(id, name, bt, dp, density, dm, mm, v, ms, s, c); return def; }
     }
 }

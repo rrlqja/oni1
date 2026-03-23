@@ -16,7 +16,7 @@ namespace Core.Simulation.Runtime
     ///
     /// Phase B (밀도 인지 이동):
     ///   모든 가스 셀이 밀도 기반 방향 가중치에 따라 이동을 시도한다.
-    ///   - 진공 인접 → 통째 이동 (drift), 연속 밀도 비율 기반 방향 편향
+    ///   - 진공 인접 → 통째 이동 (drift), 방향 균일 (밀도 편향 없음)
     ///   - 다른 가스 인접 → 실제 밀도 비교로 스왑 가중치 결정
     ///   결과적으로 시간이 지나면 밀도순 층 분리.
     /// </summary>
@@ -176,9 +176,10 @@ namespace Core.Simulation.Runtime
         {
             float density = sourceElement.Density;
 
-            // ── 1) 밀도 기반 방향 가중치 (진공 Drift 용) ──
-            // 선호 방향 + 좌우만 허용, 반대 방향은 완전 차단.
-            // 반대 방향에 낮은 확률이라도 있으면 분리된 기체가 다시 섞인다.
+            // ── 1) 밀도 기반 방향 가중치 (이종 교환 전용) ──
+            // 진공 drift에는 적용되지 않음 (EvaluateDirection에서 균일 1f로 덮어씀).
+            // 이종 기체 교환(swap)에서만 사용:
+            // 선호 방향만 허용, 반대 방향은 완전 차단.
             //
             // 연속 비율로 선호 방향 강도를 결정하되, 반대 방향은 0으로 고정:
             //   H₂(90):   wUp=9.6, wDown=0   (위로만)
@@ -373,9 +374,13 @@ namespace Core.Simulation.Runtime
 
             if (cell.ElementId == BuiltInElementIds.Vacuum)
             {
-                // 진공 → drift 가능
-                // caller의 연속 가중치(wUp/wDown/wLeft/wRight)를 그대로 사용
+                // 진공 → drift: 방향 균일 (밀도 편향 없음)
+                // Phase A 균등화가 이미 균일 확산을 담당.
+                // Phase B drift에 밀도 편향을 적용하면 이중 적용되어
+                // 진공 공간에서 기체가 한쪽으로만 쏠리는 문제 발생.
+                // 이종 교환(actionType=2)에서만 밀도 기반 가중치를 사용한다.
                 actionType = 1;
+                directionWeight = 1f;
             }
             else if (element.BehaviorType == ElementBehaviorType.Gas &&
                      cell.ElementId != sourceElementId &&
