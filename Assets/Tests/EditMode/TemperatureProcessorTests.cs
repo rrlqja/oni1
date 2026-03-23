@@ -265,7 +265,7 @@ namespace Tests.EditMode
             SetCell(3, 4, VacuumId, 0, 0f);
             SetCell(6, 4, VacuumId, 0, 0f);
 
-            for (int t = 1; t <= 2000; t++)
+            for (int t = 1; t <= 20000; t++)
                 _runner.Step(t);
 
             float tempA = _grid.GetCell(4, 4).Temperature;
@@ -287,7 +287,7 @@ namespace Tests.EditMode
             SetCell(4, 4, StoneId, 1_000_000, 600f);
             SetCell(5, 4, StoneId, 2_000_000, 300f);
 
-            for (int t = 1; t <= 2000; t++)
+            for (int t = 1; t <= 20000; t++)
                 _runner.Step(t);
 
             float tempA = _grid.GetCell(4, 4).Temperature;

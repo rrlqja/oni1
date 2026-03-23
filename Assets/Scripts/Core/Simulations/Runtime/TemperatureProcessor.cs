@@ -34,7 +34,7 @@ namespace Core.Simulation.Runtime
         /// 틱당 열 교환 스케일. 전도율 값과 TPS에 따라 튜닝.
         /// 초기값 0.001f. 플레이테스트로 조정.
         /// </summary>
-        private const float CONDUCTIVITY_SCALE = 1f;
+        private const float CONDUCTIVITY_SCALE = 0.1f;
 
         /// <summary>
         /// 이 이하의 온도 차이는 열 교환을 건너뜀 (성능 + 부동소수점 노이즈 방지).
