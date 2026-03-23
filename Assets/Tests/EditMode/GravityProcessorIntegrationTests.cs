@@ -198,7 +198,7 @@ namespace Tests.EditMode
         // ================================================================
 
         private void FillAllVacuum() { _grid.Fill(VacuumId, 0, 0); }
-        private void SetCell(int x, int y, byte elementId, int mass) { _grid.SetCell(x, y, new SimCell(elementId, mass, 0, SimCellFlags.None)); }
+        private void SetCell(int x, int y, byte elementId, int mass) { _grid.SetCell(x, y, new SimCell(elementId, mass, 0f, SimCellFlags.None)); }
         private int SumMassOfElement(byte elementId) { int t = 0; for (int i = 0; i < _grid.Length; i++) if (_grid.GetCellByIndex(i).ElementId == elementId) t += _grid.GetCellByIndex(i).Mass; return t; }
         private int SumEntityMass(byte elementId) { int t = 0; var e = _runner.FallingEntities.ActiveEntities; for (int i = 0; i < e.Count; i++) if (e[i].ElementId == elementId) t += e[i].Mass; return t; }
         private int CountElementCells(byte elementId) { int c = 0; for (int i = 0; i < _grid.Length; i++) if (_grid.GetCellByIndex(i).ElementId == elementId) c++; return c; }

@@ -62,7 +62,7 @@ namespace Core.Simulation.Runtime
                 int transfer = cell.Mass;
                 if (transfer > 0)
                 {
-                    short mergedTemp = ComputeMergedTemperature(
+                    float mergedTemp = ComputeMergedTemperature(
                         cell.Temperature, transfer,
                         targetRef.Temperature, targetRef.Mass);
 
@@ -151,15 +151,13 @@ namespace Core.Simulation.Runtime
             return cell.ElementId == elementId;
         }
 
-        private static short ComputeMergedTemperature(
-            short sourceTemp, int sourceMass,
-            short targetTemp, int targetMass)
+        private static float ComputeMergedTemperature(
+            float sourceTemp, int sourceMass,
+            float targetTemp, int targetMass)
         {
             long total = (long)sourceMass + targetMass;
             if (total <= 0) return targetTemp;
-
-            long result = ((long)sourceTemp * sourceMass + (long)targetTemp * targetMass) / total;
-            return (short)result;
+            return (sourceTemp * sourceMass + targetTemp * targetMass) / total;
         }
     }
 }

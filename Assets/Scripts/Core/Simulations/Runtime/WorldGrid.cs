@@ -97,7 +97,7 @@ namespace Core.Simulation.Runtime
             }
         }
 
-        public void Fill(byte elementId, int mass = 0, short temperature = 0)
+        public void Fill(byte elementId, int mass = 0, float temperature = 0f)
         {
             for (int i = 0; i < _cells.Length; i++)
             {

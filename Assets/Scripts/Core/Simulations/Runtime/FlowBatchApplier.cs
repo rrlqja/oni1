@@ -20,7 +20,7 @@ namespace Core.Simulation.Runtime
 
         private readonly int[] _flowOutgoingMass;
         private readonly int[] _flowIncomingMass;
-        private readonly long[] _flowIncomingThermal;
+        private readonly float[] _flowIncomingThermal;
         private readonly byte[] _flowIncomingElementId;
         private readonly bool[] _flowTouched;
         private readonly List<int> _flowTouchedIndices = new(256);
@@ -32,7 +32,7 @@ namespace Core.Simulation.Runtime
 
             _flowOutgoingMass = new int[_grid.Length];
             _flowIncomingMass = new int[_grid.Length];
-            _flowIncomingThermal = new long[_grid.Length];
+            _flowIncomingThermal = new float[_grid.Length];
             _flowIncomingElementId = new byte[_grid.Length];
             _flowTouched = new bool[_grid.Length];
         }
@@ -82,7 +82,7 @@ namespace Core.Simulation.Runtime
 
                 _flowOutgoingMass[batch.SourceIndex] += acceptedMass;
                 _flowIncomingMass[targetIndex] += acceptedMass;
-                _flowIncomingThermal[targetIndex] += (long)batch.SourceTemperature * acceptedMass;
+                _flowIncomingThermal[targetIndex] += batch.SourceTemperature * acceptedMass;
 
                 if (_flowIncomingElementId[targetIndex] == 0)
                     _flowIncomingElementId[targetIndex] = batch.ElementId;
@@ -109,7 +109,7 @@ namespace Core.Simulation.Runtime
             SimCell vacuumCell = new SimCell(
                 elementId: vacuum.Id,
                 mass: vacuum.DefaultMass,
-                temperature: 0,
+                temperature: 0f,
                 flags: SimCellFlags.None);
 
             for (int i = 0; i < _flowTouchedIndices.Count; i++)
@@ -142,11 +142,11 @@ namespace Core.Simulation.Runtime
 
                 if (incoming > 0)
                 {
-                    long retainedThermal = retainedMass > 0
-                        ? (long)snapshot.Temperature * retainedMass
-                        : 0;
-                    long totalThermal = retainedThermal + _flowIncomingThermal[index];
-                    updated.Temperature = (short)(totalThermal / finalMass);
+                    float retainedThermal = retainedMass > 0
+                        ? snapshot.Temperature * retainedMass
+                        : 0f;
+                    float totalThermal = retainedThermal + _flowIncomingThermal[index];
+                    updated.Temperature = totalThermal / finalMass;
                 }
 
                 _grid.GetCellRef(index) = updated;
@@ -160,7 +160,7 @@ namespace Core.Simulation.Runtime
                 int index = _flowTouchedIndices[i];
                 _flowOutgoingMass[index] = 0;
                 _flowIncomingMass[index] = 0;
-                _flowIncomingThermal[index] = 0;
+                _flowIncomingThermal[index] = 0f;
                 _flowIncomingElementId[index] = 0;
                 _flowTouched[index] = false;
             }

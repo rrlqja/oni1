@@ -6,7 +6,7 @@ namespace Core.Simulation.Commands
     {
         public readonly int SourceIndex;
         public readonly byte ElementId;
-        public readonly short SourceTemperature;
+        public readonly float SourceTemperature;
         public readonly FlowBatchMode Mode;
         public readonly byte TransferCount;
 
@@ -18,7 +18,7 @@ namespace Core.Simulation.Commands
         public FlowBatchCommand(
             int sourceIndex,
             byte elementId,
-            short sourceTemperature,
+            float sourceTemperature,
             FlowBatchMode mode,
             byte transferCount,
             FlowTransferPlan transfer0,

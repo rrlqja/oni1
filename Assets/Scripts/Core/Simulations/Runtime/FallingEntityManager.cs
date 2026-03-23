@@ -37,7 +37,7 @@ namespace Core.Simulation.Runtime
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         }
 
-        public void Spawn(byte elementId, int mass, short temperature,
+        public void Spawn(byte elementId, int mass, float temperature,
             int cellX, int cellY, int fallSpeed)
         {
             // fallSpeed 파라미터는 하위호환용, 실제론 가속도 사용
@@ -334,14 +334,14 @@ namespace Core.Simulation.Runtime
 
             if (transfer > 0)
             {
-                long totalThermal = (long)target.Temperature * target.Mass
-                    + (long)entity.Temperature * transfer;
+                float totalThermal = target.Temperature * target.Mass
+                    + entity.Temperature * transfer;
                 int totalMass = target.Mass + transfer;
 
                 target.Mass = totalMass;
                 target.Temperature = totalMass > 0
-                    ? (short)(totalThermal / totalMass)
-                    : (short)0;
+                    ? totalThermal / totalMass
+                    : 0f;
             }
 
             entity.Mass -= transfer;

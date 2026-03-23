@@ -17,7 +17,7 @@ namespace Core.Simulation.Data
         public int Mass;
 
         /// <summary>온도</summary>
-        public short Temperature;
+        public float Temperature;
 
         /// <summary>X 셀 좌표 (정수, 수직 낙하이므로 변하지 않음)</summary>
         public int CellX;
@@ -35,7 +35,7 @@ namespace Core.Simulation.Data
         public bool IsActive;
 
         public FallingEntity(
-            byte elementId, int mass, short temperature,
+            byte elementId, int mass, float temperature,
             int cellX, float startY)
         {
             ElementId = elementId;

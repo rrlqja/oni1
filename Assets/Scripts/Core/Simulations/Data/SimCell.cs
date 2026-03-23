@@ -7,15 +7,18 @@ namespace Core.Simulation.Data
     {
         public byte ElementId;
         public byte Flags;
-        public short Temperature;
+        private short _padding;     // 4바이트 정렬용
         public int Mass;
+        public float Temperature;   // 켈빈 (K). 0K=절대영도, 273.15K=0℃
 
-        public SimCell(byte elementId, int mass, short temperature = 0, SimCellFlags flags = SimCellFlags.None)
+        public SimCell(byte elementId, int mass, float temperature = 0f,
+                       SimCellFlags flags = SimCellFlags.None)
         {
             ElementId = elementId;
             Mass = mass;
             Temperature = temperature;
             Flags = (byte)flags;
+            _padding = 0;
         }
 
         public bool HasFlag(SimCellFlags flag)
@@ -33,6 +36,6 @@ namespace Core.Simulation.Data
             Flags = (byte)(((SimCellFlags)Flags) & ~flag);
         }
 
-        public static SimCell Vacuum => new SimCell(0, 0);
+        public static SimCell Vacuum => new SimCell(0, 0, 0f);
     }
 }

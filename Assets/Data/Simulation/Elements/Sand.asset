@@ -20,6 +20,20 @@ MonoBehaviour:
   density: 1500
   defaultMass: 1500
   maxMass: 2000
+  viscosity: 1
+  minSpreadMass: 0
   baseColor:
     serializedVersion: 2
     rgba: 4290888916
+  lateralRetainMass: 0
+  thermalConductivity: 0.2
+  specificHeatCapacity: 0.83
+  defaultTemperature: 293.15
+  highTransitionTemp: 0
+  highTransitionTarget: {fileID: 0}
+  highTransitionOre: {fileID: 0}
+  highTransitionOreMassRatio: 0
+  lowTransitionTemp: 0
+  lowTransitionTarget: {fileID: 0}
+  lowTransitionOre: {fileID: 0}
+  lowTransitionOreMassRatio: 0

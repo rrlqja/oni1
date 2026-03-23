@@ -11,5 +11,7 @@ namespace Core.Simulation.Definitions
         public const byte Oxygen = 6;
         public const byte Hydrogen = 7;
         public const byte CarbonDioxide = 8;
+        public const byte Ice = 9;
+        public const byte Steam = 10;
     }
 }

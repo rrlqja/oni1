@@ -170,7 +170,7 @@ namespace Tests.EditMode
             }
         }
 
-        private void SetCell(int x, int y, byte elementId, int mass, short temperature = 0)
+        private void SetCell(int x, int y, byte elementId, int mass, float temperature = 0f)
         {
             ref SimCell cell = ref _grid.GetCellRef(_grid.ToIndex(x, y));
             cell = new SimCell(

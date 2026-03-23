@@ -35,7 +35,7 @@ namespace Core.Simulation.Runtime
             public int Y;
             public byte ElementId;
             public int Mass;
-            public short Temperature;
+            public float Temperature;
             public int FallSpeed;
         }
 

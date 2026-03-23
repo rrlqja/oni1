@@ -26,3 +26,14 @@ MonoBehaviour:
     serializedVersion: 2
     rgba: 4294963410
   lateralRetainMass: 0
+  thermalConductivity: 0.024
+  specificHeatCapacity: 1.01
+  defaultTemperature: 293.15
+  highTransitionTemp: 0
+  highTransitionTarget: {fileID: 0}
+  highTransitionOre: {fileID: 0}
+  highTransitionOreMassRatio: 0
+  lowTransitionTemp: 0
+  lowTransitionTarget: {fileID: 0}
+  lowTransitionOre: {fileID: 0}
+  lowTransitionOreMassRatio: 0

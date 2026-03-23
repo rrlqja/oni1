@@ -31,7 +31,7 @@ namespace Core.Simulation.Runtime
         public FlowBatchCommand ToBatch(
             int sourceIndex,
             byte elementId,
-            short temperature,
+            float temperature,
             FlowBatchMode mode)
         {
             return new FlowBatchCommand(

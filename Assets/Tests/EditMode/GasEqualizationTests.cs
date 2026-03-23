@@ -260,7 +260,7 @@ namespace Tests.EditMode
 
         private void SetCell(int x, int y, byte elementId, int mass)
         {
-            _grid.SetCell(x, y, new SimCell(elementId, mass, 0, SimCellFlags.None));
+            _grid.SetCell(x, y, new SimCell(elementId, mass, 0f, SimCellFlags.None));
         }
 
         private bool HasGas(int x, int y)

@@ -114,7 +114,7 @@ namespace Tests.EditMode
 
         // ================================================================
         private void FillAllVacuum() { for (int y = 0; y < _grid.Height; y++) for (int x = 0; x < _grid.Width; x++) SetCell(x, y, VacuumId, 0); }
-        private void SetCell(int x, int y, byte elementId, int mass) { ref SimCell c = ref _grid.GetCellRef(_grid.ToIndex(x, y)); c = new SimCell(elementId, mass, 0, SimCellFlags.None); }
+        private void SetCell(int x, int y, byte elementId, int mass) { ref SimCell c = ref _grid.GetCellRef(_grid.ToIndex(x, y)); c = new SimCell(elementId, mass, 0f, SimCellFlags.None); }
         private int SumMassOfElement(byte elementId) { int t = 0; for (int i = 0; i < _grid.Length; i++) if (_grid.GetCellByIndex(i).ElementId == elementId) t += _grid.GetCellByIndex(i).Mass; return t; }
 
         private ElementRegistry CreateRegistry()

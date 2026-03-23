@@ -33,7 +33,7 @@ namespace Core.Simulation.Runtime
             SimCell vacuumCell = new SimCell(
                 elementId: vacuum.Id,
                 mass: vacuum.DefaultMass,
-                temperature: 0,
+                temperature: 0f,
                 flags: SimCellFlags.None);
 
             for (int i = 0; i < commands.Count; i++)
@@ -107,7 +107,7 @@ namespace Core.Simulation.Runtime
             int sourceMassBefore = sourceCell.Mass;
             int targetMassBefore = targetCell.Mass;
 
-            short mergedTemperature = ComputeMassWeightedTemperature(
+            float mergedTemperature = ComputeMassWeightedTemperature(
                 sourceCell.Temperature, sourceMassBefore,
                 targetCell.Temperature, targetMassBefore,
                 transferMass);
@@ -146,7 +146,7 @@ namespace Core.Simulation.Runtime
 
             int targetMassBefore = targetCell.Mass;
 
-            short mergedTemperature = ComputeMassWeightedTemperature(
+            float mergedTemperature = ComputeMassWeightedTemperature(
                 sourceCell.Temperature, transferMass,
                 targetCell.Temperature, targetMassBefore,
                 transferMass);
@@ -158,23 +158,22 @@ namespace Core.Simulation.Runtime
             sourceCell = vacuumCell;
         }
 
-        private static short ComputeMassWeightedTemperature(
-            short sourceTemperature, int sourceMassBefore,
-            short targetTemperature, int targetMassBefore,
+        private static float ComputeMassWeightedTemperature(
+            float sourceTemperature, int sourceMassBefore,
+            float targetTemperature, int targetMassBefore,
             int transferredMass)
         {
             if (transferredMass <= 0)
                 return targetTemperature;
 
-            long weightedSource = (long)sourceTemperature * transferredMass;
-            long weightedTarget = (long)targetTemperature * targetMassBefore;
+            float weightedSource = sourceTemperature * transferredMass;
+            float weightedTarget = targetTemperature * targetMassBefore;
 
-            long totalMass = targetMassBefore + transferredMass;
+            long totalMass = (long)targetMassBefore + transferredMass;
             if (totalMass <= 0)
                 return targetTemperature;
 
-            long result = (weightedSource + weightedTarget) / totalMass;
-            return (short)result;
+            return (weightedSource + weightedTarget) / totalMass;
         }
     }
 }

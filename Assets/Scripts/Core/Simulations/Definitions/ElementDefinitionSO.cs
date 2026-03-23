@@ -42,6 +42,44 @@ namespace Core.Simulation.Definitions
         [Min(0)]
         [SerializeField] private int lateralRetainMass = 0;
 
+        [Header("Thermal Properties")]
+        [Tooltip("열 전도율 (W/m·K). 높을수록 열이 빨리 전달됨.")]
+        [Min(0f)]
+        [SerializeField] private float thermalConductivity = 1f;
+
+        [Tooltip("비열 용량 (DTU/g·K). 높을수록 온도가 잘 안 변함.")]
+        [Min(0.01f)]
+        [SerializeField] private float specificHeatCapacity = 1f;
+
+        [Tooltip("생성 시 기본 온도 (K).")]
+        [SerializeField] private float defaultTemperature = 293.15f;
+
+        [Header("Phase Transition — Heating")]
+        [Tooltip("이 온도(K) 이상 + 오버슈트에서 변환. 0이면 없음.")]
+        [SerializeField] private float highTransitionTemp = 0f;
+
+        [Tooltip("가열 시 변환 대상 원소.")]
+        [SerializeField] private ElementDefinitionSO highTransitionTarget;
+
+        [Tooltip("가열 변환 시 부산물 원소 (선택).")]
+        [SerializeField] private ElementDefinitionSO highTransitionOre;
+
+        [Range(0f, 1f)]
+        [SerializeField] private float highTransitionOreMassRatio = 0f;
+
+        [Header("Phase Transition — Cooling")]
+        [Tooltip("이 온도(K) 이하 - 오버슈트에서 변환. 0이면 없음.")]
+        [SerializeField] private float lowTransitionTemp = 0f;
+
+        [Tooltip("냉각 시 변환 대상 원소.")]
+        [SerializeField] private ElementDefinitionSO lowTransitionTarget;
+
+        [Tooltip("냉각 변환 시 부산물 원소 (선택).")]
+        [SerializeField] private ElementDefinitionSO lowTransitionOre;
+
+        [Range(0f, 1f)]
+        [SerializeField] private float lowTransitionOreMassRatio = 0f;
+
         public int LateralRetainMass => lateralRetainMass;
 
         public byte Id => id;
@@ -70,10 +108,22 @@ namespace Core.Simulation.Definitions
                 minSpreadMass: minSpreadMass,
                 isSolid: isSolid,
                 baseColor: baseColor,
-                lateralRetainMass: lateralRetainMass);
+                lateralRetainMass: lateralRetainMass,
+                // 새 필드
+                thermalConductivity: thermalConductivity,
+                specificHeatCapacity: specificHeatCapacity,
+                defaultTemperature: defaultTemperature,
+                highTransitionTemp: highTransitionTemp,
+                highTransitionTargetId: highTransitionTarget != null ? highTransitionTarget.Id : (byte)0,
+                highTransitionOreId: highTransitionOre != null ? highTransitionOre.Id : (byte)0,
+                highTransitionOreMassRatio: highTransitionOreMassRatio,
+                lowTransitionTemp: lowTransitionTemp,
+                lowTransitionTargetId: lowTransitionTarget != null ? lowTransitionTarget.Id : (byte)0,
+                lowTransitionOreId: lowTransitionOre != null ? lowTransitionOre.Id : (byte)0,
+                lowTransitionOreMassRatio: lowTransitionOreMassRatio);
         }
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR || UNITY_INCLUDE_TESTS
         public void SetValuesForTests(
             byte id,
             string elementName,
@@ -98,6 +148,27 @@ namespace Core.Simulation.Definitions
             this.minSpreadMass = minSpreadMass;
             this.isSolid = isSolid;
             this.baseColor = baseColor;
+            // 기존 시그니처 끝에 추가
+            this.thermalConductivity = 1f;
+            this.specificHeatCapacity = 1f;
+            this.defaultTemperature = 293.15f;
+            this.highTransitionTemp = 0f;
+            this.highTransitionTarget = null;
+            this.highTransitionOre = null;
+            this.highTransitionOreMassRatio = 0f;
+            this.lowTransitionTemp = 0f;
+            this.lowTransitionTarget = null;
+            this.lowTransitionOre = null;
+            this.lowTransitionOreMassRatio = 0f;
+        }
+        public void SetThermalValuesForTests(
+            float thermalConductivity,
+            float specificHeatCapacity,
+            float defaultTemperature = 293.15f)
+        {
+            this.thermalConductivity = thermalConductivity;
+            this.specificHeatCapacity = specificHeatCapacity;
+            this.defaultTemperature = defaultTemperature;
         }
         private void OnValidate()
         {

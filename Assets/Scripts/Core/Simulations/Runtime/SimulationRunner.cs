@@ -11,12 +11,13 @@ namespace Core.Simulation.Runtime
     ///
     /// 방향 분리 원칙:
     ///   Phase 0: ProjectileScan   — 투사체 대상 감지 + 그리드 제거
-    ///   Phase 1: Gravity          — 수직     FallingSolid + Liquid 셀 낙하 (Swap, Merge)
+    ///   Phase 1: Gravity          — 수직     FallingSolid + Liquid 셀 낙하
     ///   Phase 2: LiquidFlow       — 좌우     액체 확산 + 기체 밀어내기
     ///   Phase 3: LiquidDensity    — 수직     이종 액체 밀도 교환
     ///   Phase 4: GasEqualization  — 상하좌우  같은 가스끼리 균등화
     ///   Phase 5: GasDensity       — 상하좌우  밀도 인지 이동
     ///   Phase 6: ProjectileMove   — 투사체 이동 + 착지 + 그리드 재생성
+    ///   Phase 7: HeatConduction   — 인접 셀 간 열 전도 (NEW)
     ///
     /// Phase 0에서 투사체 대상 셀이 그리드에서 제거되므로,
     /// Phase 1에서 해당 셀과 불필요한 Swap이 발생하지 않는다.
@@ -38,6 +39,7 @@ namespace Core.Simulation.Runtime
         private readonly LiquidFlowProcessor _liquidFlowProcessor;
         private readonly LiquidDensityProcessor _liquidDensityProcessor;
         private readonly GasFlowPlanner _gasFlowPlanner;
+        private readonly TemperatureProcessor _temperatureProcessor;
 
         private readonly CommandApplier _commandApplier;
         private readonly FlowBatchApplier _flowBatchApplier;
@@ -62,6 +64,8 @@ namespace Core.Simulation.Runtime
 
             _commandApplier = new CommandApplier(_grid, _registry);
             _flowBatchApplier = new FlowBatchApplier(_grid, _registry);
+
+            _temperatureProcessor = new TemperatureProcessor(_grid, _registry);
         }
 
         public void Step(int currentTick)
@@ -69,7 +73,7 @@ namespace Core.Simulation.Runtime
             bool leftToRight = (currentTick & 1) == 0;
 
             // Phase 0: 투사체 스캔 — 대상 셀 감지 + 그리드에서 제거 + 엔티티 생성
-            //   Phase 1 전에 실행: 투사체 대상이 먼저 빠져야 Phase 1에서 Swap 안 함.
+            // Phase 1 전에 실행: 투사체 대상이 먼저 빠져야 Phase 1에서 Swap 안 함.
             _projectileScanProcessor.Scan(currentTick, leftToRight);
 
             // Phase 1: 중력 (셀 낙하) — 투사체 대상이 아닌 셀만 처리
@@ -117,8 +121,10 @@ namespace Core.Simulation.Runtime
             // Phase 6: 투사체 이동 + 착지 — 다른 Phase 완료 후 실행
             //   착지한 원소는 그리드에 재생성 → 다음 틱부터 정상 시뮬레이션 대상
             _fallingEntityManager.ProcessTick();
-
             _grid.ClearAllTickReservations();
+
+            // Phase 7: 열 전도 — 인접 셀 간 열 교환
+            _temperatureProcessor.Process();
         }
     }
 }
