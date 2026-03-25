@@ -24,7 +24,7 @@ MonoBehaviour:
   minSpreadMass: 10000
   baseColor:
     serializedVersion: 2
-    rgba: 4279116894
+    rgba: 4288392370
   lateralRetainMass: 300
   thermalConductivity: 0.1
   specificHeatCapacity: 2.01

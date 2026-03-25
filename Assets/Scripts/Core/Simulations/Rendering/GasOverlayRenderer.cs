@@ -50,6 +50,26 @@ namespace Core.Simulation.Rendering
         [Range(0f, 3f)]
         [SerializeField] private float blurRadius = 1f;
 
+        [Header("Cloud Pattern")]
+        [Tooltip("구름 패턴 텍스처. null이면 구름 효과 없이 기존 방식으로 동작.")]
+        [SerializeField] private Texture2D cloudTexture;
+
+        [Tooltip("구름 패턴 스케일. 클수록 작은 구름, 작을수록 큰 구름.")]
+        [Range(0.5f, 8f)]
+        [SerializeField] private float cloudScale = 2.0f;
+
+        [Tooltip("구름 드리프트 속도. 구름이 천천히 흘러가는 효과.")]
+        [Range(0f, 0.3f)]
+        [SerializeField] private float cloudDrift = 0.05f;
+
+        [Tooltip("구름 대비. 높을수록 덩어리가 뚜렷해짐.")]
+        [Range(0.5f, 3f)]
+        [SerializeField] private float cloudContrast = 1.5f;
+
+        [Tooltip("경계 페이드 강도. 높을수록 가장자리가 부드럽게 사라짐.")]
+        [Range(0f, 2f)]
+        [SerializeField] private float edgeFade = 0.8f;
+
         private SimulationWorld _world;
         private Texture2D _texture;
         private Sprite _sprite;
@@ -62,6 +82,11 @@ namespace Core.Simulation.Rendering
         private static readonly int PropNoiseStrength = Shader.PropertyToID("_NoiseStrength");
         private static readonly int PropNoiseScale = Shader.PropertyToID("_NoiseScale");
         private static readonly int PropBlurRadius = Shader.PropertyToID("_BlurRadius");
+        private static readonly int PropCloudTex = Shader.PropertyToID("_CloudTex");
+        private static readonly int PropCloudScale = Shader.PropertyToID("_CloudScale");
+        private static readonly int PropCloudDrift = Shader.PropertyToID("_CloudDrift");
+        private static readonly int PropCloudContrast = Shader.PropertyToID("_CloudContrast");
+        private static readonly int PropEdgeFade = Shader.PropertyToID("_EdgeFade");
 
         private static readonly Color32 Transparent = new Color32(0, 0, 0, 0);
 
@@ -158,6 +183,15 @@ namespace Core.Simulation.Rendering
             _material.SetFloat(PropNoiseStrength, noiseStrength);
             _material.SetFloat(PropNoiseScale, noiseScale);
             _material.SetFloat(PropBlurRadius, blurRadius);
+
+            if (cloudTexture != null)
+            {
+                _material.SetTexture(PropCloudTex, cloudTexture);
+            }
+            _material.SetFloat(PropCloudScale, cloudScale);
+            _material.SetFloat(PropCloudDrift, cloudDrift);
+            _material.SetFloat(PropCloudContrast, cloudContrast);
+            _material.SetFloat(PropEdgeFade, edgeFade);
         }
 
         // ================================================================

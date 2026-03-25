@@ -706,6 +706,12 @@ MonoBehaviour:
   waveAmplitude: 0.03
   waveFrequency: 3
   waveSpeed: 1.5
+  patternTexture: {fileID: 2800000, guid: fb2f387e2c7ff4a2999e802900140f58, type: 3}
+  patternStrength: 0.12
+  patternScale: 1
+  flowSpeedX: 0.15
+  flowSpeedY: -0.05
+  surfaceHighlight: 0.2
 --- !u!23 &481074695
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1288,6 +1294,11 @@ MonoBehaviour:
   noiseStrength: 0.08
   noiseScale: 5
   blurRadius: 1
+  cloudTexture: {fileID: 2800000, guid: ac0da8ffcb2d74be6be5c9dba31d2332, type: 3}
+  cloudScale: 2
+  cloudDrift: 0.05
+  cloudContrast: 1.5
+  edgeFade: 0.8
 --- !u!212 &825674810
 SpriteRenderer:
   m_ObjectHideFlags: 0

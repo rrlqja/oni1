@@ -58,6 +58,26 @@ namespace Core.Simulation.Rendering
         [Range(0f, 5f)]
         [SerializeField] private float waveSpeed = 1.5f;
 
+        [Header("Pattern")]
+        [Tooltip("액체 패턴 텍스처. null이면 패턴 없이 단색.")]
+        [SerializeField] private Texture2D patternTexture;
+
+        [Range(0f, 0.4f)]
+        [SerializeField] private float patternStrength = 0.12f;
+
+        [Range(0.5f, 8f)]
+        [SerializeField] private float patternScale = 1.0f;
+
+        [Range(-1f, 1f)]
+        [SerializeField] private float flowSpeedX = 0.15f;
+
+        [Range(-1f, 1f)]
+        [SerializeField] private float flowSpeedY = -0.05f;
+
+        [Header("Surface")]
+        [Range(0f, 0.5f)]
+        [SerializeField] private float surfaceHighlight = 0.2f;
+
         private SimulationWorld _world;
         private Mesh _mesh;
         private Material _material;
@@ -65,6 +85,7 @@ namespace Core.Simulation.Rendering
         private readonly List<Vector3> _vertices = new List<Vector3>(2048);
         private readonly List<int> _triangles = new List<int>(3072);
         private readonly List<Color32> _colors = new List<Color32>(2048);
+        private readonly List<Vector2> _uvs = new List<Vector2>(2048);
 
         private void Reset()
         {
@@ -105,6 +126,7 @@ namespace Core.Simulation.Rendering
             ClearBuffers();
             BuildMesh();
             ApplyMesh();
+            UpdateMaterialParams();
         }
 
         public void RefreshDirty(IReadOnlyList<int> dirtyIndices, int gridWidth)
@@ -256,6 +278,12 @@ namespace Core.Simulation.Rendering
             _colors.Add(color); _colors.Add(color);
             _colors.Add(color); _colors.Add(color);
 
+            float surfaceY = 0.5f + fillRatio * 0.5f;
+            _uvs.Add(new Vector2(0f, 0.5f));        // 좌하
+            _uvs.Add(new Vector2(0.5f, 0.5f));      // 중하
+            _uvs.Add(new Vector2(0.5f, surfaceY));   // 중상
+            _uvs.Add(new Vector2(0f, surfaceY));     // 좌상
+
             // ── 우반쪽 Quad (mid ~ right) ──
             vi = _vertices.Count;
 
@@ -269,6 +297,11 @@ namespace Core.Simulation.Rendering
 
             _colors.Add(color); _colors.Add(color);
             _colors.Add(color); _colors.Add(color);
+
+            _uvs.Add(new Vector2(0.5f, 0.5f));      // 중하
+            _uvs.Add(new Vector2(1f, 0.5f));        // 우하
+            _uvs.Add(new Vector2(1f, surfaceY));     // 우상
+            _uvs.Add(new Vector2(0.5f, surfaceY));   // 중상
         }
 
         /// <summary>
@@ -362,6 +395,11 @@ namespace Core.Simulation.Rendering
 
             _colors.Add(color); _colors.Add(color);
             _colors.Add(color); _colors.Add(color);
+
+            _uvs.Add(new Vector2(0f, 0f));    // 좌하
+            _uvs.Add(new Vector2(1f, 0f));    // 우하
+            _uvs.Add(new Vector2(1f, 0.4f));  // 우상
+            _uvs.Add(new Vector2(0f, 0.4f));  // 좌상
         }
 
         // ================================================================
@@ -400,6 +438,7 @@ namespace Core.Simulation.Rendering
             _vertices.Clear();
             _triangles.Clear();
             _colors.Clear();
+            _uvs.Clear();
         }
 
         private void ApplyMesh()
@@ -412,6 +451,9 @@ namespace Core.Simulation.Rendering
             _mesh.SetVertices(_vertices);
             _mesh.SetTriangles(_triangles, 0);
             _mesh.SetColors(_colors);
+
+            if (_uvs.Count > 0)
+            _mesh.SetUVs(0, _uvs);
         }
 
         // ================================================================
@@ -420,13 +462,35 @@ namespace Core.Simulation.Rendering
 
         private void EnsureMaterial()
         {
-            if (meshRenderer.sharedMaterial != null)
+            if (_material != null)
                 return;
 
-            _material = new Material(Shader.Find("Sprites/Default"))
+            Shader liquidShader = Shader.Find("Simulation/Liquid");
+
+            if (liquidShader != null)
             {
-                name = "LiquidMaterial"
-            };
+                _material = new Material(liquidShader)
+                {
+                    name = "LiquidMaterial"
+                };
+                Debug.Log("LiquidMeshRenderer: Custom Liquid shader loaded.");
+            }
+            else
+            {
+                // 폴백: 기존 셰이더 (패턴 없이 단색)
+                Shader fallback = Shader.Find("Sprites/Default");
+                if (fallback == null)
+                    fallback = Shader.Find("Unlit/Color");
+
+                _material = new Material(fallback)
+                {
+                    name = "LiquidMaterial_Fallback"
+                };
+                Debug.LogWarning(
+                    "LiquidMeshRenderer: 'Simulation/Liquid' shader not found. " +
+                    "Falling back to Sprites/Default.");
+            }
+
             meshRenderer.material = _material;
         }
 
@@ -450,6 +514,20 @@ namespace Core.Simulation.Rendering
                 SafeDestroy(_material);
                 _material = null;
             }
+        }
+
+        private void UpdateMaterialParams()
+        {
+            if (_material == null) return;
+
+            if (patternTexture != null)
+                _material.SetTexture("_PatternTex", patternTexture);
+
+            _material.SetFloat("_PatternStrength", patternStrength);
+            _material.SetFloat("_PatternScale", patternScale);
+            _material.SetFloat("_FlowSpeedX", flowSpeedX);
+            _material.SetFloat("_FlowSpeedY", flowSpeedY);
+            _material.SetFloat("_SurfaceHighlight", surfaceHighlight);
         }
 
         private void OnDestroy()
