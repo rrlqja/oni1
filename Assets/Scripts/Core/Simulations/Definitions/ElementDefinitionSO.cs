@@ -170,6 +170,25 @@ namespace Core.Simulation.Definitions
             this.specificHeatCapacity = specificHeatCapacity;
             this.defaultTemperature = defaultTemperature;
         }
+        public void SetTransitionValuesForTests(
+            float highTransitionTemp = 0f,
+            ElementDefinitionSO highTransitionTarget = null,
+            ElementDefinitionSO highTransitionOre = null,
+            float highTransitionOreMassRatio = 0f,
+            float lowTransitionTemp = 0f,
+            ElementDefinitionSO lowTransitionTarget = null,
+            ElementDefinitionSO lowTransitionOre = null,
+            float lowTransitionOreMassRatio = 0f)
+        {
+            this.highTransitionTemp = highTransitionTemp;
+            this.highTransitionTarget = highTransitionTarget;
+            this.highTransitionOre = highTransitionOre;
+            this.highTransitionOreMassRatio = highTransitionOreMassRatio;
+            this.lowTransitionTemp = lowTransitionTemp;
+            this.lowTransitionTarget = lowTransitionTarget;
+            this.lowTransitionOre = lowTransitionOre;
+            this.lowTransitionOreMassRatio = lowTransitionOreMassRatio;
+        }
         private void OnValidate()
         {
             if (string.IsNullOrWhiteSpace(elementName))

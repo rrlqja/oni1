@@ -16,8 +16,8 @@ namespace Core.Simulation.Runtime
     ///   Phase 3: LiquidDensity    — 수직     이종 액체 밀도 교환
     ///   Phase 4: GasEqualization  — 상하좌우  같은 가스끼리 균등화
     ///   Phase 5: GasDensity       — 상하좌우  밀도 인지 이동
-    ///   Phase 6: ProjectileMove   — 투사체 이동 + 착지 + 그리드 재생성
-    ///   Phase 7: HeatConduction   — 인접 셀 간 열 전도 (NEW)
+    ///   Phase 7: HeatConduction   — 인접 셀 간 열 전도
+    ///   Phase 8: StateTransition  — 온도 기반 원소 전환 (NEW)
     ///
     /// Phase 0에서 투사체 대상 셀이 그리드에서 제거되므로,
     /// Phase 1에서 해당 셀과 불필요한 Swap이 발생하지 않는다.
@@ -45,6 +45,8 @@ namespace Core.Simulation.Runtime
         private readonly FlowBatchApplier _flowBatchApplier;
         private readonly FallingEntityManager _fallingEntityManager;
 
+        private readonly StateTransitionProcessor _stateTransitionProcessor;
+
         /// <summary>투사체 엔티티 매니저 (렌더링에서 참조)</summary>
         public FallingEntityManager FallingEntities => _fallingEntityManager;
 
@@ -66,6 +68,8 @@ namespace Core.Simulation.Runtime
             _flowBatchApplier = new FlowBatchApplier(_grid, _registry);
 
             _temperatureProcessor = new TemperatureProcessor(_grid, _registry);
+
+            _stateTransitionProcessor = new StateTransitionProcessor(_grid, _registry);
         }
 
         public void Step(int currentTick)
@@ -125,6 +129,9 @@ namespace Core.Simulation.Runtime
 
             // Phase 7: 열 전도 — 인접 셀 간 열 교환
             _temperatureProcessor.Process();
+
+            // Phase 8: 상태변환 — 온도 기반 원소 전환 (NEW)
+            _stateTransitionProcessor.Process();
         }
     }
 }

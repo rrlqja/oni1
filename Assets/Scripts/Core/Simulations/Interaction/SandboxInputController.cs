@@ -108,7 +108,7 @@ namespace Core.Simulation.Interaction
         private void HandleSelectionKeys()
         {
             if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Vacuum);
+                worldEditService.SetSelectedElement(BuiltInElementIds.Steam);
 
             if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
                 worldEditService.SetSelectedElement(BuiltInElementIds.Bedrock);
@@ -133,6 +133,9 @@ namespace Core.Simulation.Interaction
 
             if (Input.GetKeyDown(KeyCode.Alpha9) || Input.GetKeyDown(KeyCode.Keypad9))
                 worldEditService.SetSelectedElement(BuiltInElementIds.CarbonDioxide);
+            
+            if (Input.GetKeyDown(KeyCode.Alpha0) || Input.GetKeyDown(KeyCode.Keypad0))
+                worldEditService.SetSelectedElement(BuiltInElementIds.Ice);
         }
 
         // ================================================================
@@ -166,6 +169,10 @@ namespace Core.Simulation.Interaction
             // 좌클릭: 페인트 / Ctrl+좌클릭: 지우기
             if (Input.GetMouseButton(0))
             {
+                // Command+좌클릭은 셀 정보 로그용 → 페인트 스킵
+                if (Input.GetKey(KeyCode.LeftCommand) || Input.GetKey(KeyCode.RightCommand))
+                    return;
+                
                 bool isErase = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
 
                 if (ShouldSkipRepeatedEdit(x, y, isErase ? 1 : 0))
@@ -227,7 +234,11 @@ namespace Core.Simulation.Interaction
 
         private void HandleMiddleClickInfo(int x, int y)
         {
-            if (Input.GetMouseButtonDown(2))
+            bool middleClick = Input.GetMouseButtonDown(2);
+            bool commandClick = (Input.GetKey(KeyCode.LeftCommand) || Input.GetKey(KeyCode.RightCommand))
+                                && Input.GetMouseButtonDown(0);
+
+            if (middleClick || commandClick)
                 worldEditService.LogCellInfo(x, y);
         }
 

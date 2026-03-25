@@ -10,30 +10,30 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f940cf47b8ee452f9ca920f42f0b852, type: 3}
-  m_Name: Water
+  m_Name: Ice
   m_EditorClassIdentifier: 
-  id: 3
-  elementName: "\uBB3C"
-  behaviorType: 3
-  displacementPriority: 2
-  isSolid: 0
-  density: 1000
+  id: 9
+  elementName: Ice
+  behaviorType: 1
+  displacementPriority: 4
+  isSolid: 1
+  density: 917
   defaultMass: 1000000
   maxMass: 1000000
-  viscosity: 10
-  minSpreadMass: 10000
+  viscosity: 1
+  minSpreadMass: 0
   baseColor:
     serializedVersion: 2
-    rgba: 4294941315
-  lateralRetainMass: 300
-  thermalConductivity: 0.6
-  specificHeatCapacity: 4.18
-  defaultTemperature: 293.15
-  highTransitionTemp: 373.15
-  highTransitionTarget: {fileID: 11400000, guid: 113b84aef4a894e47bebc6ffed7b27c0, type: 2}
+    rgba: 4294962319
+  lateralRetainMass: 0
+  thermalConductivity: 2.18
+  specificHeatCapacity: 2.05
+  defaultTemperature: 263.15
+  highTransitionTemp: 273.15
+  highTransitionTarget: {fileID: 11400000, guid: 8c6f968048d7b425f8a403a1f4e5f270, type: 2}
   highTransitionOre: {fileID: 0}
   highTransitionOreMassRatio: 0
-  lowTransitionTemp: 273.15
-  lowTransitionTarget: {fileID: 11400000, guid: 26ef4e2bcb0bf45ac9fc5727cb01d6e5, type: 2}
+  lowTransitionTemp: 0
+  lowTransitionTarget: {fileID: 0}
   lowTransitionOre: {fileID: 0}
   lowTransitionOreMassRatio: 0

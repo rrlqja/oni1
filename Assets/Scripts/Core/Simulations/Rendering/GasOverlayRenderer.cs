@@ -252,13 +252,13 @@ namespace Core.Simulation.Rendering
 
             if (_sprite != null)
             {
-                DestroyObject(_sprite);
+                SafeDestroy(_sprite);
                 _sprite = null;
             }
 
             if (_texture != null)
             {
-                DestroyObject(_texture);
+                SafeDestroy(_texture);
                 _texture = null;
             }
 
@@ -271,7 +271,7 @@ namespace Core.Simulation.Rendering
 
             if (_material != null)
             {
-                DestroyObject(_material);
+                SafeDestroy(_material);
                 _material = null;
             }
         }
@@ -281,7 +281,7 @@ namespace Core.Simulation.Rendering
             ReleaseVisuals();
         }
 
-        private static void DestroyObject(Object obj)
+        private static void SafeDestroy(Object obj)
         {
             if (obj == null) return;
 

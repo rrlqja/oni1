@@ -441,13 +441,13 @@ namespace Core.Simulation.Rendering
 
             if (_mesh != null)
             {
-                DestroyObject(_mesh);
+                SafeDestroy(_mesh);
                 _mesh = null;
             }
 
             if (_material != null)
             {
-                DestroyObject(_material);
+                SafeDestroy(_material);
                 _material = null;
             }
         }
@@ -457,7 +457,7 @@ namespace Core.Simulation.Rendering
             ReleaseVisuals();
         }
 
-        private static void DestroyObject(Object obj)
+        private static void SafeDestroy(Object obj)
         {
             if (obj == null) return;
 

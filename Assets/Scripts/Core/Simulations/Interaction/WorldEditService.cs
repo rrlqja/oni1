@@ -73,7 +73,7 @@ namespace Core.Simulation.Interaction
             SimCell newCell = new SimCell(
                 elementId: element.Id,
                 mass: element.DefaultMass,
-                temperature: 0f,
+                temperature: element.DefaultTemperature,
                 flags: SimCellFlags.None);
 
             int index = simulationWorld.Grid.ToIndex(x, y);

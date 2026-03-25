@@ -211,7 +211,7 @@ namespace Core.Simulation.Rendering
                 {
                     if (_tileCache[i] != null)
                     {
-                        DestroyObject(_tileCache[i]);
+                        SafeDestroy(_tileCache[i]);
                         _tileCache[i] = null;
                     }
                 }
@@ -237,7 +237,7 @@ namespace Core.Simulation.Rendering
             ReleaseVisuals();
         }
 
-        private static void DestroyObject(Object obj)
+        private static void SafeDestroy(Object obj)
         {
             if (obj == null) return;
 
