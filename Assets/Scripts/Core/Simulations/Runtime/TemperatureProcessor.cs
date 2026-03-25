@@ -81,7 +81,7 @@ namespace Core.Simulation.Runtime
             for (int i = 0; i < _grid.Length; i++)
             {
                 float dt = _deltaTemp[i];
-                if (dt == 0f)
+                if (dt == 0f || float.IsNaN(dt) || float.IsInfinity(dt))
                     continue;
 
                 ref SimCell cell = ref _grid.GetCellRef(i);
@@ -129,8 +129,8 @@ namespace Core.Simulation.Runtime
             float capacityA = (a.Mass * 0.001f) * defA.SpecificHeatCapacity;
             float capacityB = (b.Mass * 0.001f) * defB.SpecificHeatCapacity;
 
-            if (capacityA <= 0f || capacityB <= 0f)
-                return;
+            const float MIN_CAPACITY = 0.01f;
+            if (capacityA < MIN_CAPACITY || capacityB < MIN_CAPACITY) return;
 
             float dtA = -q / capacityA;
             float dtB = q / capacityB;
