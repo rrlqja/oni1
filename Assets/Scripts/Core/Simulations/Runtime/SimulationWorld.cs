@@ -12,6 +12,8 @@ namespace Core.Simulation.Runtime
         [Header("Data")]
         [SerializeField] private ElementDatabaseSO elementDatabase;
 
+        public ElementDatabaseSO ElementDatabase => elementDatabase;
+
         [Header("World Size")]
         [Min(1)]
         [SerializeField] private int width = 128;

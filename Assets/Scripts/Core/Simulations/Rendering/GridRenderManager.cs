@@ -19,7 +19,7 @@ namespace Core.Simulation.Rendering
 
         [Header("Layer Renderers")]
         [SerializeField] private BackgroundRenderer backgroundRenderer;
-        [SerializeField] private SolidTilemapRenderer solidRenderer;
+        [SerializeField] private SolidMeshRenderer solidRenderer;
         [SerializeField] private LiquidMeshRenderer liquidRenderer;
         [SerializeField] private GasOverlayRenderer gasRenderer;
         [SerializeField] private DebugOverlayRenderer debugOverlayRenderer;
@@ -45,7 +45,7 @@ namespace Core.Simulation.Rendering
                 backgroundRenderer = GetComponentInChildren<BackgroundRenderer>();
 
             if (solidRenderer == null)
-                solidRenderer = GetComponentInChildren<SolidTilemapRenderer>();
+                solidRenderer = GetComponentInChildren<SolidMeshRenderer>();
 
             if (liquidRenderer == null)
                 liquidRenderer = GetComponentInChildren<LiquidMeshRenderer>();

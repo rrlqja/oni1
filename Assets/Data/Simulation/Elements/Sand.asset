@@ -37,3 +37,15 @@ MonoBehaviour:
   lowTransitionTarget: {fileID: 0}
   lowTransitionOre: {fileID: 0}
   lowTransitionOreMassRatio: 0
+  liquidPatternStrength: 0.15
+  liquidFlowSpeed: 0.15
+  liquidPatternScale: 1
+  liquidSurfaceHighlight: 0.15
+  liquidViscosity: 0
+  gasCloudScale: 2
+  gasCloudContrast: 1.5
+  gasDriftSpeed: 0.05
+  gasEdgeSoftness: 0.8
+  solidTexture: {fileID: 2800000, guid: f03230256d5e14d7584349d18dd6b66f, type: 3}
+  solidTextureScale: 0.25
+  solidCrackStrength: 0.3

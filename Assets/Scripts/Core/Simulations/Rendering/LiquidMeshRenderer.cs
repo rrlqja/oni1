@@ -87,6 +87,16 @@ namespace Core.Simulation.Rendering
         private readonly List<Color32> _colors = new List<Color32>(2048);
         private readonly List<Vector2> _uvs = new List<Vector2>(2048);
 
+        private byte _dominantLiquidId;
+        private readonly Dictionary<byte, long> _liquidMassPerElement = new Dictionary<byte, long>(8);
+
+        private static readonly int PropPatternStrength = Shader.PropertyToID("_PatternStrength");
+        private static readonly int PropFlowSpeedX = Shader.PropertyToID("_FlowSpeedX");
+        private static readonly int PropFlowSpeedY = Shader.PropertyToID("_FlowSpeedY");
+        private static readonly int PropPatternScale = Shader.PropertyToID("_PatternScale");
+        private static readonly int PropSurfaceHighlight = Shader.PropertyToID("_SurfaceHighlight");
+        private static readonly int PropEdgeDarken = Shader.PropertyToID("_EdgeDarken");
+
         private void Reset()
         {
             meshFilter = GetComponent<MeshFilter>();
@@ -172,6 +182,8 @@ namespace Core.Simulation.Rendering
             float halfH = h * 0.5f;
             float time = Time.time;
 
+            _liquidMassPerElement.Clear();
+
             for (int y = 0; y < h; y++)
             {
                 for (int x = 0; x < w; x++)
@@ -184,6 +196,11 @@ namespace Core.Simulation.Rendering
                         continue;
                     if (cell.Mass <= 0)
                         continue;
+
+                    if (_liquidMassPerElement.TryGetValue(cell.ElementId, out long accumulated))
+                        _liquidMassPerElement[cell.ElementId] = accumulated + cell.Mass;
+                    else
+                        _liquidMassPerElement[cell.ElementId] = cell.Mass;
 
                     bool isSurface = IsSurfaceCell(grid, x, y);
 
@@ -199,6 +216,17 @@ namespace Core.Simulation.Rendering
                         // 비표면: 전체 채움 단순 Quad
                         AddQuad(x - halfW, y - halfH, 1f, 1f, color);
                     }
+                }
+            }
+
+            _dominantLiquidId = 0;
+            long maxMass = 0;
+            foreach (var kvp in _liquidMassPerElement)
+            {
+                if (kvp.Value > maxMass)
+                {
+                    maxMass = kvp.Value;
+                    _dominantLiquidId = kvp.Key;
                 }
             }
         }
@@ -520,14 +548,31 @@ namespace Core.Simulation.Rendering
         {
             if (_material == null) return;
 
+            // 패턴 텍스처 (Inspector에서 설정한 공유 텍스처)
             if (patternTexture != null)
                 _material.SetTexture("_PatternTex", patternTexture);
 
-            _material.SetFloat("_PatternStrength", patternStrength);
-            _material.SetFloat("_PatternScale", patternScale);
-            _material.SetFloat("_FlowSpeedX", flowSpeedX);
-            _material.SetFloat("_FlowSpeedY", flowSpeedY);
-            _material.SetFloat("_SurfaceHighlight", surfaceHighlight);
+            // 원소별 파라미터: dominant 원소의 값 사용
+            if (_dominantLiquidId != 0 && _world != null)
+            {
+                ref readonly var def = ref _world.GetElement(_dominantLiquidId);
+
+                _material.SetFloat(PropPatternStrength, def.LiquidPatternStrength);
+                _material.SetFloat(PropFlowSpeedX, def.LiquidFlowSpeed);
+                _material.SetFloat(PropFlowSpeedY, -def.LiquidFlowSpeed * 0.3f);
+                _material.SetFloat(PropPatternScale, def.LiquidPatternScale);
+                _material.SetFloat(PropSurfaceHighlight, def.LiquidSurfaceHighlight);
+                _material.SetFloat(PropEdgeDarken, def.LiquidViscosity * 0.15f);
+            }
+            else
+            {
+                // 폴백: Inspector 값 사용 (기존 동작)
+                _material.SetFloat(PropPatternStrength, patternStrength);
+                _material.SetFloat(PropFlowSpeedX, flowSpeedX);
+                _material.SetFloat(PropFlowSpeedY, flowSpeedY);
+                _material.SetFloat(PropPatternScale, patternScale);
+                _material.SetFloat(PropSurfaceHighlight, surfaceHighlight);
+            }
         }
 
         private void OnDestroy()

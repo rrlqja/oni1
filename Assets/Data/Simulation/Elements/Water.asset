@@ -37,3 +37,12 @@ MonoBehaviour:
   lowTransitionTarget: {fileID: 11400000, guid: 26ef4e2bcb0bf45ac9fc5727cb01d6e5, type: 2}
   lowTransitionOre: {fileID: 0}
   lowTransitionOreMassRatio: 0
+  liquidPatternStrength: 0.12
+  liquidFlowSpeed: 0.15
+  liquidPatternScale: 1
+  liquidSurfaceHighlight: 0.25
+  liquidViscosity: 0
+  gasCloudScale: 2
+  gasCloudContrast: 1.5
+  gasDriftSpeed: 0.05
+  gasEdgeSoftness: 0.8

@@ -179,19 +179,69 @@ namespace Core.Simulation.Rendering
             if (_material == null || !_hasCustomShader)
                 return;
 
+            // ── 기존 파라미터 유지 ──
             _material.SetFloat(PropNoiseSpeed, noiseSpeed);
             _material.SetFloat(PropNoiseStrength, noiseStrength);
             _material.SetFloat(PropNoiseScale, noiseScale);
             _material.SetFloat(PropBlurRadius, blurRadius);
 
+            // ── 구름 텍스처 ──
             if (cloudTexture != null)
-            {
                 _material.SetTexture(PropCloudTex, cloudTexture);
+
+            // ── 원소별 가중 평균 계산 ──
+            if (_world == null || _world.Grid == null || _world.ElementRegistry == null)
+            {
+                // 폴백: Inspector 값 사용
+                _material.SetFloat(PropCloudScale, cloudScale);
+                _material.SetFloat(PropCloudDrift, cloudDrift);
+                _material.SetFloat(PropCloudContrast, cloudContrast);
+                _material.SetFloat(PropEdgeFade, edgeFade);
+                return;
             }
-            _material.SetFloat(PropCloudScale, cloudScale);
-            _material.SetFloat(PropCloudDrift, cloudDrift);
-            _material.SetFloat(PropCloudContrast, cloudContrast);
-            _material.SetFloat(PropEdgeFade, edgeFade);
+
+            WorldGrid grid = _world.Grid;
+            int length = grid.Width * grid.Height;
+
+            float totalMass = 0f;
+            float weightedCloudScale = 0f;
+            float weightedContrast = 0f;
+            float weightedDrift = 0f;
+            float weightedEdgeFade = 0f;
+
+            for (int i = 0; i < length; i++)
+            {
+                SimCell cell = grid.GetCellByIndex(i);
+                if (cell.Mass <= 0)
+                    continue;
+
+                ref readonly var def = ref _world.GetElement(cell.ElementId);
+                if (def.BehaviorType != ElementBehaviorType.Gas)
+                    continue;
+
+                float mass = cell.Mass;
+                totalMass += mass;
+                weightedCloudScale += def.GasCloudScale * mass;
+                weightedContrast += def.GasCloudContrast * mass;
+                weightedDrift += def.GasDriftSpeed * mass;
+                weightedEdgeFade += def.GasEdgeSoftness * mass;
+            }
+
+            if (totalMass > 0f)
+            {
+                _material.SetFloat(PropCloudScale, weightedCloudScale / totalMass);
+                _material.SetFloat(PropCloudContrast, weightedContrast / totalMass);
+                _material.SetFloat(PropCloudDrift, weightedDrift / totalMass);
+                _material.SetFloat(PropEdgeFade, weightedEdgeFade / totalMass);
+            }
+            else
+            {
+                // 기체 없음: Inspector 폴백
+                _material.SetFloat(PropCloudScale, cloudScale);
+                _material.SetFloat(PropCloudDrift, cloudDrift);
+                _material.SetFloat(PropCloudContrast, cloudContrast);
+                _material.SetFloat(PropEdgeFade, edgeFade);
+            }
         }
 
         // ================================================================
