@@ -2,6 +2,7 @@
 using Core.Simulation.Definitions;
 using Core.Simulation.Rendering;
 using Core.Simulation.Interaction;
+using Core.Simulation.Runtime.WorldGeneration;
 using UnityEngine;
 
 namespace Core.Simulation.Runtime
@@ -14,12 +15,15 @@ namespace Core.Simulation.Runtime
 
         public ElementDatabaseSO ElementDatabase => elementDatabase;
 
+        [Header("Settings")]
+        [SerializeField] private SimulationSettingsSO simulationSettings;
+
         [Header("World Size")]
         [Min(1)]
-        [SerializeField] private int width = 128;
+        [SerializeField] private int width = 256;
 
         [Min(1)]
-        [SerializeField] private int height = 64;
+        [SerializeField] private int height = 256;
 
         [Header("View")]
         [SerializeField] private GridRenderManager gridRenderManager;
@@ -28,9 +32,13 @@ namespace Core.Simulation.Runtime
         [Min(0.1f)]
         [SerializeField] private float ticksPerSecond = 10f;
 
+        [Header("World Generation")]
+        [Tooltip("맵 생성 프로파일. null이면 BasicWorldGenerator 사용.")]
+        [SerializeField] private WorldGenProfileSO worldGenProfile;
+
         [SerializeField] private bool startPaused = true;
 
-        private const int MAX_CATCHUP_TICKS = 5;
+        private int MaxCatchupTicks => _simulationRunner?.Settings.MaxCatchupTicks ?? 5;
 
         private SimulationRunner _simulationRunner;
 
@@ -38,6 +46,11 @@ namespace Core.Simulation.Runtime
 
         public ElementRegistry ElementRegistry { get; private set; }
         public WorldGrid Grid { get; private set; }
+
+        /// <summary>
+        /// 마지막으로 사용된 WorldGenerator. BackgroundRenderer가 바이옴 색상을 읽는 데 사용.
+        /// </summary>
+        public WorldGenerator LastWorldGenerator { get; private set; }
 
         public int Width => width;
         public int Height => height;
@@ -97,6 +110,9 @@ namespace Core.Simulation.Runtime
                 return;
             }
 
+            if (simulationSettings != null)
+                ticksPerSecond = simulationSettings.defaultTicksPerSecond;
+
             Debug.Log("ElementDatabase assigned", this);
 
             ElementRegistry = new ElementRegistry(elementDatabase);
@@ -105,7 +121,8 @@ namespace Core.Simulation.Runtime
             Grid = new WorldGrid(width, height);
             Debug.Log($"WorldGrid created: {width}x{height}", this);
 
-            _simulationRunner = new SimulationRunner(Grid, ElementRegistry);
+            var settings = new SimulationSettings(simulationSettings);
+            _simulationRunner = new SimulationRunner(Grid, ElementRegistry, settings);
 
             GenerateWorld();
             Debug.Log("World generated", this);
@@ -153,7 +170,7 @@ namespace Core.Simulation.Runtime
             {
                 _tickAccumulator -= tickInterval;
 
-                if (ticksThisFrame >= MAX_CATCHUP_TICKS)
+                if (ticksThisFrame >= _simulationRunner.Settings.MaxCatchupTicks)
                 {
                     // 남은 시간을 버려서 악순환 방지
                     _tickAccumulator = 0f;
@@ -170,8 +187,18 @@ namespace Core.Simulation.Runtime
         {
             if (Grid == null || ElementRegistry == null)
                 return;
-
-            BasicWorldGenerator.Generate(Grid, ElementRegistry);
+        
+            if (worldGenProfile != null)
+            {
+                var generator = new WorldGenerator(Grid, ElementRegistry, worldGenProfile);
+                generator.Generate();
+                LastWorldGenerator = generator;
+            }
+            else
+            {
+                BasicWorldGenerator.Generate(Grid, ElementRegistry);
+                LastWorldGenerator = null;
+            }
         }
 
         [ContextMenu("Refresh Renderer")]

@@ -21,20 +21,16 @@ namespace Core.Simulation.Runtime
         private readonly WorldGrid _grid;
         private readonly ElementRegistry _registry;
         private readonly List<FallingEntity> _entities = new(64);
-
-        /// <summary>중력 가속도 (셀/틱²). 매 틱 velocity에 더해진다.</summary>
-        private const float GRAVITY = 0.5f;
-
-        /// <summary>최대 낙하 속도 (셀/틱).</summary>
-        private const float MAX_VELOCITY = 6f;
+        private readonly SimulationSettings _settings;
 
         public IReadOnlyList<FallingEntity> ActiveEntities => _entities;
         public int Count => _entities.Count;
 
-        public FallingEntityManager(WorldGrid grid, ElementRegistry registry)
+        public FallingEntityManager(WorldGrid grid, ElementRegistry registry, SimulationSettings settings = null)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _settings = settings ?? new SimulationSettings(null);
         }
 
         public void Spawn(byte elementId, int mass, float temperature,
@@ -85,9 +81,9 @@ namespace Core.Simulation.Runtime
             entity.PreviousY = entity.CurrentY;
 
             // 중력 가속: velocity 증가
-            entity.Velocity += GRAVITY;
-            if (entity.Velocity > MAX_VELOCITY)
-                entity.Velocity = MAX_VELOCITY;
+            entity.Velocity += _settings.Gravity;
+            if (entity.Velocity > _settings.MaxVelocity)
+                entity.Velocity = _settings.MaxVelocity;
 
             int x = entity.CellX;
             int startY = (int)entity.CurrentY;

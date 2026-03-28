@@ -10,24 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f940cf47b8ee452f9ca920f42f0b852, type: 3}
-  m_Name: DirtyWater'
+  m_Name: Granite
   m_EditorClassIdentifier: 
-  id: 5
-  elementName: "\uC624\uC5FC\uB41C \uBB3C"
-  behaviorType: 3
-  displacementPriority: 2
-  isSolid: 0
-  density: 1200
+  id: 2
+  elementName: "\uD654\uAC15\uC554"
+  behaviorType: 1
+  displacementPriority: 4
+  isSolid: 1
+  density: 2700
   defaultMass: 1000000
   maxMass: 1000000
-  viscosity: 10
-  minSpreadMass: 10000
+  viscosity: 1
+  minSpreadMass: 0
   baseColor:
     serializedVersion: 2
-    rgba: 4286035902
-  lateralRetainMass: 300
-  thermalConductivity: 0.58
-  specificHeatCapacity: 3.94
+    rgba: 4286744460
+  lateralRetainMass: 0
+  thermalConductivity: 3
+  specificHeatCapacity: 0.79
   defaultTemperature: 293.15
   highTransitionTemp: 0
   highTransitionTarget: {fileID: 0}
@@ -37,3 +37,15 @@ MonoBehaviour:
   lowTransitionTarget: {fileID: 0}
   lowTransitionOre: {fileID: 0}
   lowTransitionOreMassRatio: 0
+  liquidPatternStrength: 0.15
+  liquidFlowSpeed: 0.15
+  liquidPatternScale: 1
+  liquidSurfaceHighlight: 0.15
+  liquidViscosity: 0
+  gasCloudScale: 2
+  gasCloudContrast: 1.5
+  gasDriftSpeed: 0.05
+  gasEdgeSoftness: 0.8
+  solidTexture: {fileID: 0}
+  solidTextureScale: 0.25
+  solidCrackStrength: 0.3

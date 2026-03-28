@@ -253,6 +253,7 @@ GameObject:
   - component: {fileID: 204233352}
   - component: {fileID: 204233354}
   - component: {fileID: 204233355}
+  - component: {fileID: 204233356}
   m_Layer: 0
   m_Name: SimulationWorld
   m_TagString: Untagged
@@ -273,10 +274,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   elementDatabase: {fileID: 11400000, guid: c62dd4a8a871a4e5a8ce40d6ff26a8f9, type: 2}
-  width: 128
-  height: 64
+  simulationSettings: {fileID: 11400000, guid: a0e3c34e83e6f2b4bb7b398160275918, type: 2}
+  width: 256
+  height: 256
   gridRenderManager: {fileID: 1855277519}
   ticksPerSecond: 10
+  worldGenProfile: {fileID: 11400000, guid: 332ee0a15bd22da4abd973639e50bcad, type: 2}
   startPaused: 1
 --- !u!4 &204233351
 Transform:
@@ -310,6 +313,7 @@ MonoBehaviour:
   gridRenderManager: {fileID: 1855277519}
   worldEditService: {fileID: 204233353}
   cameraController: {fileID: 519420033}
+  elementDatabase: {fileID: 11400000, guid: c62dd4a8a871a4e5a8ce40d6ff26a8f9, type: 2}
   brushSize: 1
   maxBrushSize: 20
 --- !u!114 &204233353
@@ -361,6 +365,29 @@ MonoBehaviour:
   buttonColor: {r: 0.2, g: 0.2, b: 0.25, a: 1}
   selectedButtonColor: {r: 0.3, g: 0.5, b: 0.8, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
+--- !u!114 &204233356
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 204233349}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5625c0958ffb8794f9a3b904ad1fa927, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  simulationWorld: {fileID: 204233350}
+  gridRenderManager: {fileID: 1855277519}
+  targetCamera: {fileID: 519420031}
+  fontSize: 13
+  panelColor: {r: 0.08, g: 0.08, b: 0.1, a: 0.92}
+  labelColor: {r: 0.65, g: 0.65, b: 0.7, a: 1}
+  valueColor: {r: 1, g: 1, b: 1, a: 1}
+  elementNameColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+  cursorOffset: {x: 20, y: -10}
+  tooltipWidth: 180
+  screenMargin: 10
 --- !u!1 &285245984
 GameObject:
   m_ObjectHideFlags: 0

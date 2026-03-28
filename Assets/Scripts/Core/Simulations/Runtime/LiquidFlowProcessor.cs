@@ -29,13 +29,13 @@ namespace Core.Simulation.Runtime
     {
         private readonly WorldGrid _grid;
         private readonly ElementRegistry _registry;
+        private readonly SimulationSettings _settings;
 
-        private const int MAX_LATERAL_TRANSFER_PER_SIDE_PER_TICK = 100_000;
-
-        public LiquidFlowProcessor(WorldGrid grid, ElementRegistry registry)
+        public LiquidFlowProcessor(WorldGrid grid, ElementRegistry registry, SimulationSettings settings)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace Core.Simulation.Runtime
             int directSwapGasIndex = -1;
 
             int desiredPerSide = currentRemainingMass / sourceDef.Viscosity;
-            desiredPerSide = Math.Min(desiredPerSide, MAX_LATERAL_TRANSFER_PER_SIDE_PER_TICK);
+            desiredPerSide = Math.Min(desiredPerSide, _settings.MaxLateralTransfer);
 
             if (desiredPerSide <= 0)
                 return;

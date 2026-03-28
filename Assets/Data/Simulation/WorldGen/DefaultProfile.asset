@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 468981dbd4bd8514faa4abeadc52b3fc, type: 3}
+  m_Name: DefaultProfile
+  m_EditorClassIdentifier: 
+  seed: 42
+  randomizeSeed: 0
+  spawnBiome: {fileID: 11400000, guid: 8efed39f7dffb1346abd81e5c9e24f2c, type: 2}
+  availableBiomes:
+  - {fileID: 11400000, guid: 8efed39f7dffb1346abd81e5c9e24f2c, type: 2}
+  - {fileID: 11400000, guid: ed883ddf90df149459d5d8ab76cb4ab8, type: 2}
+  - {fileID: 11400000, guid: e71ffb96cd9df8540bc0a89792d05738, type: 2}
+  - {fileID: 11400000, guid: 7c789f700925b6d4199a9ac5829ded68, type: 2}
+  - {fileID: 11400000, guid: 2345deb9050fe174685bae658d26e946, type: 2}
+  biomePointCount: 90
+  relaxationIterations: 6
+  boundaryNoise: 0
+  boundaryNoiseScale: 0.01
+  borderThickness: 1

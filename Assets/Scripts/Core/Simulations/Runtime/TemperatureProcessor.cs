@@ -29,22 +29,13 @@ namespace Core.Simulation.Runtime
         private readonly WorldGrid _grid;
         private readonly ElementRegistry _registry;
         private readonly float[] _deltaTemp;
+        private readonly SimulationSettings _settings;
 
-        /// <summary>
-        /// 틱당 열 교환 스케일. 전도율 값과 TPS에 따라 튜닝.
-        /// 초기값 0.001f. 플레이테스트로 조정.
-        /// </summary>
-        private const float CONDUCTIVITY_SCALE = 0.1f;
-
-        /// <summary>
-        /// 이 이하의 온도 차이는 열 교환을 건너뜀 (성능 + 부동소수점 노이즈 방지).
-        /// </summary>
-        private const float MIN_TEMP_DIFF = 0.001f;
-
-        public TemperatureProcessor(WorldGrid grid, ElementRegistry registry)
+        public TemperatureProcessor(WorldGrid grid, ElementRegistry registry, SimulationSettings settings = null)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _deltaTemp = new float[_grid.Length];
         }
 
@@ -106,7 +97,7 @@ namespace Core.Simulation.Runtime
                 return;
 
             float tempDiff = a.Temperature - b.Temperature;
-            if (Math.Abs(tempDiff) < MIN_TEMP_DIFF)
+            if (Math.Abs(tempDiff) < _settings.MinHeatExchange)
                 return;
 
             ref readonly ElementRuntimeDefinition defA = ref _registry.Get(a.ElementId);
@@ -123,7 +114,7 @@ namespace Core.Simulation.Runtime
             float kEff = 2f * kA * kB / (kA + kB);
 
             // 열 교환량 (양수면 A→B 방향)
-            float q = kEff * tempDiff * CONDUCTIVITY_SCALE;
+            float q = kEff * tempDiff * _settings.ConductivityScale;
 
             // 열 용량 = 질량 × 비열
             float capacityA = (a.Mass * 0.001f) * defA.SpecificHeatCapacity;

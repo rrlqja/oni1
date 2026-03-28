@@ -1,5 +1,6 @@
 using Core.Simulation.Definitions;
 using Core.Simulation.Rendering;
+using Core.Simulation.Runtime;
 using UnityEngine;
 
 namespace Core.Simulation.Interaction
@@ -10,7 +11,7 @@ namespace Core.Simulation.Interaction
     /// 개선사항:
     ///   - 브러시 크기 조절 ([ ] 키 또는 Shift+스크롤)
     ///   - 카메라 팬 중 편집 차단 (CameraController.IsPanning 참조)
-    ///   - 키보드 원소 선택은 유지 (UI 패널과 병행)
+    ///   - 원소 선택: ElementDatabaseSO 기반 데이터 주도 매핑 (1~9, 0 키 → DB 순서)
     ///   - 좌클릭: 페인트, 우클릭: 카메라 팬 (EraseCell은 Ctrl+좌클릭으로 이동)
     /// </summary>
     [DisallowMultipleComponent]
@@ -20,6 +21,10 @@ namespace Core.Simulation.Interaction
         [SerializeField] private GridRenderManager gridRenderManager;
         [SerializeField] private WorldEditService worldEditService;
         [SerializeField] private CameraController cameraController;
+
+        [Header("Element Selection")]
+        [Tooltip("원소 데이터베이스. 1~9,0 키가 DB 순서(Vacuum 제외)대로 매핑된다.")]
+        [SerializeField] private ElementDatabaseSO elementDatabase;
 
         [Header("Brush")]
         [Min(1)]
@@ -42,6 +47,26 @@ namespace Core.Simulation.Interaction
         private int _lastEditedY = int.MinValue;
         private int _lastEditedButton = int.MinValue;
 
+        // Vacuum을 제외한 선택 가능 원소 ID 목록 (키 매핑용)
+        private byte[] _selectableElementIds;
+
+        // 숫자 키 매핑 (1~9, 0 → 인덱스 0~9)
+        private static readonly KeyCode[] NumberKeys =
+        {
+            KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3,
+            KeyCode.Alpha4, KeyCode.Alpha5, KeyCode.Alpha6,
+            KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9,
+            KeyCode.Alpha0
+        };
+
+        private static readonly KeyCode[] NumpadKeys =
+        {
+            KeyCode.Keypad1, KeyCode.Keypad2, KeyCode.Keypad3,
+            KeyCode.Keypad4, KeyCode.Keypad5, KeyCode.Keypad6,
+            KeyCode.Keypad7, KeyCode.Keypad8, KeyCode.Keypad9,
+            KeyCode.Keypad0
+        };
+
         private void Reset()
         {
             if (targetCamera == null)
@@ -57,6 +82,12 @@ namespace Core.Simulation.Interaction
 
             if (cameraController == null)
                 cameraController = FindFirstObjectByType<CameraController>();
+
+            if (elementDatabase == null)
+                elementDatabase = FindAnyObjectByType<SimulationWorld>()?.GetComponent<SandboxUI>()
+                    ?.GetType().GetField("elementDatabase",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.GetValue(FindAnyObjectByType<SandboxUI>()) as ElementDatabaseSO;
         }
 
         private void Awake()
@@ -74,6 +105,42 @@ namespace Core.Simulation.Interaction
 
             if (cameraController == null)
                 cameraController = FindFirstObjectByType<CameraController>();
+
+            BuildSelectableElementList();
+        }
+
+        /// <summary>
+        /// ElementDatabaseSO에서 Vacuum을 제외한 선택 가능 원소 ID 목록을 구성한다.
+        /// 키 1~9, 0이 이 목록의 인덱스 0~9에 대응한다.
+        /// </summary>
+        private void BuildSelectableElementList()
+        {
+            if (elementDatabase == null)
+            {
+                Debug.LogWarning("SandboxInputController: ElementDatabaseSO가 할당되지 않았습니다. " +
+                                 "키보드 원소 선택이 비활성화됩니다.", this);
+                _selectableElementIds = System.Array.Empty<byte>();
+                return;
+            }
+
+            var list = new System.Collections.Generic.List<byte>();
+
+            foreach (var element in elementDatabase.Elements)
+            {
+                if (element == null) continue;
+                if (element.Id == BuiltInElementIds.Vacuum) continue;
+
+                list.Add(element.Id);
+            }
+
+            _selectableElementIds = list.ToArray();
+
+            // 디버그 로그: 키 매핑 확인
+            for (int i = 0; i < _selectableElementIds.Length && i < 10; i++)
+            {
+                int keyLabel = (i < 9) ? (i + 1) : 0;
+                Debug.Log($"[ElementKey] {keyLabel} → ID {_selectableElementIds[i]}");
+            }
         }
 
         private void Update()
@@ -102,40 +169,24 @@ namespace Core.Simulation.Interaction
         }
 
         // ================================================================
-        //  원소 선택 (키보드 — UI 패널과 병행)
+        //  원소 선택 (키보드 — 데이터 주도)
         // ================================================================
 
         private void HandleSelectionKeys()
         {
-            if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Steam);
+            if (_selectableElementIds == null || _selectableElementIds.Length == 0)
+                return;
 
-            if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Bedrock);
+            int maxIndex = Mathf.Min(_selectableElementIds.Length, 10);
 
-            if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Sand);
-
-            if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Water);
-
-            if (Input.GetKeyDown(KeyCode.Alpha5) || Input.GetKeyDown(KeyCode.Keypad5))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Oil);
-
-            if (Input.GetKeyDown(KeyCode.Alpha6) || Input.GetKeyDown(KeyCode.Keypad6))
-                worldEditService.SetSelectedElement(BuiltInElementIds.DirtyWater);
-
-            if (Input.GetKeyDown(KeyCode.Alpha7) || Input.GetKeyDown(KeyCode.Keypad7))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Oxygen);
-
-            if (Input.GetKeyDown(KeyCode.Alpha8) || Input.GetKeyDown(KeyCode.Keypad8))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Hydrogen);
-
-            if (Input.GetKeyDown(KeyCode.Alpha9) || Input.GetKeyDown(KeyCode.Keypad9))
-                worldEditService.SetSelectedElement(BuiltInElementIds.CarbonDioxide);
-            
-            if (Input.GetKeyDown(KeyCode.Alpha0) || Input.GetKeyDown(KeyCode.Keypad0))
-                worldEditService.SetSelectedElement(BuiltInElementIds.Ice);
+            for (int i = 0; i < maxIndex; i++)
+            {
+                if (Input.GetKeyDown(NumberKeys[i]) || Input.GetKeyDown(NumpadKeys[i]))
+                {
+                    worldEditService.SetSelectedElement(_selectableElementIds[i]);
+                    return;
+                }
+            }
         }
 
         // ================================================================
@@ -144,19 +195,17 @@ namespace Core.Simulation.Interaction
 
         private void HandleBrushSizeKeys()
         {
-            // [ ] 키로 브러시 크기 조절
-            if (Input.GetKeyDown(KeyCode.LeftBracket))
-                BrushSize--;
-
             if (Input.GetKeyDown(KeyCode.RightBracket))
                 BrushSize++;
 
-            // Shift + 스크롤로도 브러시 크기 조절
-            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+            if (Input.GetKeyDown(KeyCode.LeftBracket))
+                BrushSize--;
+
+            // Shift+스크롤로 브러시 크기 조절
+            if ((Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                && !Mathf.Approximately(Input.mouseScrollDelta.y, 0f))
             {
-                float scroll = Input.mouseScrollDelta.y;
-                if (scroll > 0f) BrushSize++;
-                else if (scroll < 0f) BrushSize--;
+                BrushSize += (int)Mathf.Sign(Input.mouseScrollDelta.y);
             }
         }
 
@@ -166,55 +215,39 @@ namespace Core.Simulation.Interaction
 
         private void HandleMousePainting(int x, int y)
         {
-            // 좌클릭: 페인트 / Ctrl+좌클릭: 지우기
-            if (Input.GetMouseButton(0))
+            bool leftDown = Input.GetMouseButton(0);
+            bool ctrlHeld = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+
+            if (!leftDown)
             {
-                // Command+좌클릭은 셀 정보 로그용 → 페인트 스킵
-                if (Input.GetKey(KeyCode.LeftCommand) || Input.GetKey(KeyCode.RightCommand))
-                    return;
-                
-                bool isErase = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-
-                if (ShouldSkipRepeatedEdit(x, y, isErase ? 1 : 0))
-                    return;
-
-                if (isErase)
-                    PaintArea(x, y, BuiltInElementIds.Vacuum);
-                else
-                    PaintArea(x, y, worldEditService.SelectedElementId);
-
-                RememberLastEdited(x, y, isErase ? 1 : 0);
+                ResetLastEdited();
                 return;
             }
 
-            ResetLastEdited();
+            int button = ctrlHeld ? 1 : 0;
+
+            if (ShouldSkipRepeatedEdit(x, y, button))
+                return;
+
+            RememberLastEdited(x, y, button);
+            ApplyBrush(x, y, ctrlHeld);
         }
 
-        private void PaintArea(int centerX, int centerY, byte elementId)
+        private void ApplyBrush(int centerX, int centerY, bool erase)
         {
-            if (brushSize <= 1)
-            {
-                if (elementId == BuiltInElementIds.Vacuum)
-                    worldEditService.EraseCell(centerX, centerY);
-                else
-                    worldEditService.PaintCell(centerX, centerY);
-                return;
-            }
-
-            // 원형 브러시
-            int radius = brushSize / 2;
-            int radiusSq = radius * radius;
             byte savedElement = worldEditService.SelectedElementId;
+            byte elementId = erase ? BuiltInElementIds.Vacuum : savedElement;
 
-            // 임시로 원소 설정 (PaintCell이 selectedElement를 사용하므로)
-            if (elementId != BuiltInElementIds.Vacuum)
-                worldEditService.SetSelectedElement(elementId);
+            if (erase)
+                worldEditService.SetSelectedElement(BuiltInElementIds.Vacuum);
+
+            int radius = brushSize - 1;
 
             for (int dy = -radius; dy <= radius; dy++)
             {
                 for (int dx = -radius; dx <= radius; dx++)
                 {
-                    if (dx * dx + dy * dy > radiusSq)
+                    if (dx * dx + dy * dy > radius * radius)
                         continue;
 
                     int tx = centerX + dx;

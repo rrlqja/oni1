@@ -13,18 +13,18 @@ MonoBehaviour:
   m_Name: Bedrock
   m_EditorClassIdentifier: 
   id: 1
-  elementName: "\uBCA0\uB4DC\uB77D"
+  elementName: "\uAE30\uBC18\uC554"
   behaviorType: 1
   displacementPriority: 4
   isSolid: 1
   density: 9999
-  defaultMass: 1000
-  maxMass: 1000
+  defaultMass: 0
+  maxMass: 0
   viscosity: 1
   minSpreadMass: 0
   baseColor:
     serializedVersion: 2
-    rgba: 4286746260
+    rgba: 4283781200
   lateralRetainMass: 0
   thermalConductivity: 3
   specificHeatCapacity: 0.79
@@ -37,3 +37,15 @@ MonoBehaviour:
   lowTransitionTarget: {fileID: 0}
   lowTransitionOre: {fileID: 0}
   lowTransitionOreMassRatio: 0
+  liquidPatternStrength: 0.15
+  liquidFlowSpeed: 0.15
+  liquidPatternScale: 1
+  liquidSurfaceHighlight: 0.15
+  liquidViscosity: 0
+  gasCloudScale: 2
+  gasCloudContrast: 1.5
+  gasDriftSpeed: 0.05
+  gasEdgeSoftness: 0.8
+  solidTexture: {fileID: 0}
+  solidTextureScale: 0.25
+  solidCrackStrength: 0.3

@@ -19,17 +19,13 @@ namespace Core.Simulation.Runtime
     {
         private readonly WorldGrid _grid;
         private readonly ElementRegistry _registry;
+        private readonly SimulationSettings _settings;
 
-        /// <summary>
-        /// 수평 밀도 교환 주기: N틱마다 한번 시도.
-        /// 값이 클수록 수평 혼합이 느려진다.
-        /// </summary>
-        private const int HORIZONTAL_INTERVAL = 3;
-
-        public LiquidDensityProcessor(WorldGrid grid, ElementRegistry registry)
+        public LiquidDensityProcessor(WorldGrid grid, ElementRegistry registry, SimulationSettings settings)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         public void BuildCommands(
@@ -103,7 +99,7 @@ namespace Core.Simulation.Runtime
                 {
                     // 해시 기반 확률: 셀마다 다른 타이밍에 시도
                     uint hash = MixHash(currentTick, x, y);
-                    if (hash % HORIZONTAL_INTERVAL != 0)
+                    if (hash % _settings.LiquidHorizontalInterval != 0)
                         continue;
 
                     int sourceIndex = _grid.ToIndex(x, y);

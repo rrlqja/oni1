@@ -17,8 +17,35 @@ MonoBehaviour:
   behaviorType: 0
   displacementPriority: 0
   isSolid: 0
+  density: 0
   defaultMass: 0
   maxMass: 0
+  viscosity: 1
+  minSpreadMass: 0
   baseColor:
     serializedVersion: 2
     rgba: 4278190080
+  lateralRetainMass: 0
+  thermalConductivity: 0
+  specificHeatCapacity: 0
+  defaultTemperature: 0
+  highTransitionTemp: 0
+  highTransitionTarget: {fileID: 0}
+  highTransitionOre: {fileID: 0}
+  highTransitionOreMassRatio: 0
+  lowTransitionTemp: 0
+  lowTransitionTarget: {fileID: 0}
+  lowTransitionOre: {fileID: 0}
+  lowTransitionOreMassRatio: 0
+  liquidPatternStrength: 0.15
+  liquidFlowSpeed: 0.15
+  liquidPatternScale: 1
+  liquidSurfaceHighlight: 0.15
+  liquidViscosity: 0
+  gasCloudScale: 2
+  gasCloudContrast: 1.5
+  gasDriftSpeed: 0.05
+  gasEdgeSoftness: 0.8
+  solidTexture: {fileID: 0}
+  solidTextureScale: 0.25
+  solidCrackStrength: 0.3

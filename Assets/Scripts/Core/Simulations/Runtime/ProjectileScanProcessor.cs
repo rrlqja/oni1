@@ -21,9 +21,7 @@ namespace Core.Simulation.Runtime
         private readonly WorldGrid _grid;
         private readonly ElementRegistry _registry;
         private readonly FallingEntityManager _fallingEntityManager;
-
-        private const int DEFAULT_FALL_SPEED_SOLID = 2;
-        private const int DEFAULT_FALL_SPEED_LIQUID = 2;
+        private readonly SimulationSettings _settings;
 
         private readonly List<ProjectileCandidate> _candidates = new(64);
         private readonly bool[] _solidColumnUsed;
@@ -42,12 +40,14 @@ namespace Core.Simulation.Runtime
         public ProjectileScanProcessor(
             WorldGrid grid,
             ElementRegistry registry,
-            FallingEntityManager fallingEntityManager)
+            FallingEntityManager fallingEntityManager, 
+            SimulationSettings settings = null)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
             _fallingEntityManager = fallingEntityManager
                 ?? throw new ArgumentNullException(nameof(fallingEntityManager));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
             _solidColumnUsed = new bool[_grid.Width];
         }
@@ -89,7 +89,7 @@ namespace Core.Simulation.Runtime
                                 ElementId = cell.ElementId,
                                 Mass = cell.Mass,
                                 Temperature = cell.Temperature,
-                                FallSpeed = DEFAULT_FALL_SPEED_SOLID
+                                FallSpeed = _settings.ProjectileFallSpeedSolid
                             });
                         }
                     }
@@ -103,7 +103,7 @@ namespace Core.Simulation.Runtime
                                 ElementId = cell.ElementId,
                                 Mass = cell.Mass,
                                 Temperature = cell.Temperature,
-                                FallSpeed = DEFAULT_FALL_SPEED_LIQUID
+                                FallSpeed = _settings.ProjectileFallSpeedLiquid
                             });
                         }
                     }

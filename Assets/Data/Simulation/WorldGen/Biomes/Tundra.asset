@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21b1946d65fb9d442bebb7cfd41a9809, type: 3}
+  m_Name: Tundra
+  m_EditorClassIdentifier: 
+  biomeName: "\uB3D9\uD1A0"
+  backgroundColor: {r: 0.4, g: 0.55, b: 0.65, a: 1}
+  elementLayers:
+  - element: {fileID: 11400000, guid: 26ef4e2bcb0bf45ac9fc5727cb01d6e5, type: 2}
+    weight: 35
+    minHeightRatio: 0
+    maxHeightRatio: 1
+  - element: {fileID: 11400000, guid: 0da58f88c8c5c0b41a08751023a57d0a, type: 2}
+    weight: 40
+    minHeightRatio: 0
+    maxHeightRatio: 1
+  - element: {fileID: 11400000, guid: f0c097dc5eea9134c8dd4c7c9f3b0c5d, type: 2}
+    weight: 20
+    minHeightRatio: 0
+    maxHeightRatio: 1
+  - element: {fileID: 11400000, guid: 06b88ee4e5fd24490bf5618362b69ce8, type: 2}
+    weight: 5
+    minHeightRatio: 0
+    maxHeightRatio: 1
+  caveDensity: 0.15
+  caveScale: 0.06
+  caveGasElement: {fileID: 11400000, guid: 5356aae5da28f4b3fafd6137dd7338e1, type: 2}
+  baseTemperature: 253.15
+  temperatureVariation: 8

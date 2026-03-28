@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f940cf47b8ee452f9ca920f42f0b852, type: 3}
+  m_Name: Magma
+  m_EditorClassIdentifier: 
+  id: 9
+  elementName: "\uC6A9\uC554"
+  behaviorType: 3
+  displacementPriority: 2
+  isSolid: 0
+  density: 2500
+  defaultMass: 1000000
+  maxMass: 1000000
+  viscosity: 20
+  minSpreadMass: 10000
+  baseColor:
+    serializedVersion: 2
+    rgba: 4279521500
+  lateralRetainMass: 300000
+  thermalConductivity: 4
+  specificHeatCapacity: 1
+  defaultTemperature: 1500
+  highTransitionTemp: 0
+  highTransitionTarget: {fileID: 0}
+  highTransitionOre: {fileID: 0}
+  highTransitionOreMassRatio: 0
+  lowTransitionTemp: 0
+  lowTransitionTarget: {fileID: 0}
+  lowTransitionOre: {fileID: 0}
+  lowTransitionOreMassRatio: 0
+  liquidPatternStrength: 0.15
+  liquidFlowSpeed: 0.15
+  liquidPatternScale: 1
+  liquidSurfaceHighlight: 0.15
+  liquidViscosity: 0
+  gasCloudScale: 2
+  gasCloudContrast: 1.5
+  gasDriftSpeed: 0.05
+  gasEdgeSoftness: 0.8
+  solidTexture: {fileID: 0}
+  solidTextureScale: 0.25
+  solidCrackStrength: 0.3

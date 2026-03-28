@@ -12,19 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f940cf47b8ee452f9ca920f42f0b852, type: 3}
   m_Name: Sand
   m_EditorClassIdentifier: 
-  id: 2
+  id: 4
   elementName: "\uBAA8\uB798"
   behaviorType: 2
   displacementPriority: 3
   isSolid: 1
-  density: 1500
-  defaultMass: 1500
-  maxMass: 2000
+  density: 1600
+  defaultMass: 1000000
+  maxMass: 1000000
   viscosity: 1
   minSpreadMass: 0
   baseColor:
     serializedVersion: 2
-    rgba: 4290696929
+    rgba: 4286624450
   lateralRetainMass: 0
   thermalConductivity: 0.2
   specificHeatCapacity: 0.83
@@ -46,6 +46,6 @@ MonoBehaviour:
   gasCloudContrast: 1.5
   gasDriftSpeed: 0.05
   gasEdgeSoftness: 0.8
-  solidTexture: {fileID: 2800000, guid: f03230256d5e14d7584349d18dd6b66f, type: 3}
+  solidTexture: {fileID: 0}
   solidTextureScale: 0.25
   solidCrackStrength: 0.3

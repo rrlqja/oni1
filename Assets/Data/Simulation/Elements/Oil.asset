@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f940cf47b8ee452f9ca920f42f0b852, type: 3}
   m_Name: Oil
   m_EditorClassIdentifier: 
-  id: 4
+  id: 7
   elementName: "\uAE30\uB984"
   behaviorType: 3
   displacementPriority: 2
@@ -20,12 +20,12 @@ MonoBehaviour:
   density: 700
   defaultMass: 1000000
   maxMass: 1000000
-  viscosity: 10
+  viscosity: 15
   minSpreadMass: 10000
   baseColor:
     serializedVersion: 2
-    rgba: 4288392370
-  lateralRetainMass: 300
+    rgba: 4280175460
+  lateralRetainMass: 200000
   thermalConductivity: 0.1
   specificHeatCapacity: 2.01
   defaultTemperature: 293.15
@@ -37,12 +37,15 @@ MonoBehaviour:
   lowTransitionTarget: {fileID: 0}
   lowTransitionOre: {fileID: 0}
   lowTransitionOreMassRatio: 0
-  liquidPatternStrength: 0.4
-  liquidFlowSpeed: 0.04
+  liquidPatternStrength: 0.15
+  liquidFlowSpeed: 0.15
   liquidPatternScale: 1
-  liquidSurfaceHighlight: 0.05
-  liquidViscosity: 0.6
+  liquidSurfaceHighlight: 0.15
+  liquidViscosity: 0
   gasCloudScale: 2
   gasCloudContrast: 1.5
   gasDriftSpeed: 0.05
   gasEdgeSoftness: 0.8
+  solidTexture: {fileID: 0}
+  solidTextureScale: 0.25
+  solidCrackStrength: 0.3

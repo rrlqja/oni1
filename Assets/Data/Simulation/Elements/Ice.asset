@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f940cf47b8ee452f9ca920f42f0b852, type: 3}
   m_Name: Ice
   m_EditorClassIdentifier: 
-  id: 9
-  elementName: Ice
+  id: 5
+  elementName: "\uC5BC\uC74C"
   behaviorType: 1
   displacementPriority: 4
   isSolid: 1
@@ -24,7 +24,7 @@ MonoBehaviour:
   minSpreadMass: 0
   baseColor:
     serializedVersion: 2
-    rgba: 4294962319
+    rgba: 4294960840
   lateralRetainMass: 0
   thermalConductivity: 2.18
   specificHeatCapacity: 2.05
@@ -37,3 +37,15 @@ MonoBehaviour:
   lowTransitionTarget: {fileID: 0}
   lowTransitionOre: {fileID: 0}
   lowTransitionOreMassRatio: 0
+  liquidPatternStrength: 0.15
+  liquidFlowSpeed: 0.15
+  liquidPatternScale: 1
+  liquidSurfaceHighlight: 0.15
+  liquidViscosity: 0
+  gasCloudScale: 2
+  gasCloudContrast: 1.5
+  gasDriftSpeed: 0.05
+  gasEdgeSoftness: 0.8
+  solidTexture: {fileID: 0}
+  solidTextureScale: 0.25
+  solidCrackStrength: 0.3

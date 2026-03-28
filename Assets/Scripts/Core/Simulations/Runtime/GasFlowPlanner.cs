@@ -24,11 +24,7 @@ namespace Core.Simulation.Runtime
     {
         private readonly WorldGrid _grid;
         private readonly ElementRegistry _registry;
-
-        /// <summary>
-        /// 밀도 이동 주기: N틱마다 한번 이동을 시도한다.
-        /// </summary>
-        private const int MOVEMENT_INTERVAL = 2;
+        private readonly SimulationSettings _settings;
 
         /// <summary>
         /// 방향 가중치 계산에 사용하는 최대 밀도 기준값.
@@ -38,10 +34,11 @@ namespace Core.Simulation.Runtime
 
         // [개선 1] DENSITY_THRESHOLD 삭제 — 이진 분류 대신 연속 밀도 비율 사용
 
-        public GasFlowPlanner(WorldGrid grid, ElementRegistry registry)
+        public GasFlowPlanner(WorldGrid grid, ElementRegistry registry, SimulationSettings settings)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         // ================================================================
@@ -146,7 +143,7 @@ namespace Core.Simulation.Runtime
 
                     // 이동 주기 제어 (셀마다 엇갈린 타이밍)
                     uint timingHash = MixHash(currentTick, x, y);
-                    if (timingHash % MOVEMENT_INTERVAL != 0)
+                    if (timingHash % _settings.GasMovementInterval != 0)
                         continue;
 
                     TryDensityMove(

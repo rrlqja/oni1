@@ -12,19 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f940cf47b8ee452f9ca920f42f0b852, type: 3}
   m_Name: CarbonDioxide
   m_EditorClassIdentifier: 
-  id: 8
+  id: 12
   elementName: "\uC774\uC0B0\uD654\uD0C4\uC18C"
   behaviorType: 4
   displacementPriority: 1
   isSolid: 0
-  density: 1200
+  density: 1000
   defaultMass: 1000
-  maxMass: 1000
+  maxMass: 2000
   viscosity: 1
-  minSpreadMass: 0
+  minSpreadMass: 50
   baseColor:
     serializedVersion: 2
-    rgba: 4291673283
+    rgba: 4289377460
   lateralRetainMass: 0
   thermalConductivity: 0.015
   specificHeatCapacity: 0.84
@@ -37,3 +37,15 @@ MonoBehaviour:
   lowTransitionTarget: {fileID: 0}
   lowTransitionOre: {fileID: 0}
   lowTransitionOreMassRatio: 0
+  liquidPatternStrength: 0.15
+  liquidFlowSpeed: 0.15
+  liquidPatternScale: 1
+  liquidSurfaceHighlight: 0.15
+  liquidViscosity: 0
+  gasCloudScale: 2
+  gasCloudContrast: 1.5
+  gasDriftSpeed: 0.05
+  gasEdgeSoftness: 0.8
+  solidTexture: {fileID: 0}
+  solidTextureScale: 0.25
+  solidCrackStrength: 0.3

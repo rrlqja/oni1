@@ -23,14 +23,13 @@ namespace Core.Simulation.Runtime
     {
         private readonly WorldGrid _grid;
         private readonly ElementRegistry _registry;
+        private readonly SimulationSettings _settings;
 
-        private const float OVERSHOOT = TemperatureConstants.TRANSITION_OVERSHOOT;
-        private const float REBOUND = TemperatureConstants.TRANSITION_REBOUND;
-
-        public StateTransitionProcessor(WorldGrid grid, ElementRegistry registry)
+        public StateTransitionProcessor(WorldGrid grid, ElementRegistry registry, SimulationSettings settings)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         public void Process()
@@ -46,25 +45,25 @@ namespace Core.Simulation.Runtime
 
                 // 가열 전환
                 if (def.HighTransitionTemp > 0f &&
-                    cell.Temperature > def.HighTransitionTemp + OVERSHOOT)
+                    cell.Temperature > def.HighTransitionTemp + _settings.TransitionOvershoot)
                 {
                     TransitionCell(ref cell, i,
                         def.HighTransitionTargetId,
                         def.HighTransitionOreId,
                         def.HighTransitionOreMassRatio,
-                        def.HighTransitionTemp + REBOUND);
+                        def.HighTransitionTemp + _settings.TransitionRebound);
                     continue;
                 }
 
                 // 냉각 전환
                 if (def.LowTransitionTemp > 0f &&
-                    cell.Temperature < def.LowTransitionTemp - OVERSHOOT)
+                    cell.Temperature < def.LowTransitionTemp - _settings.TransitionOvershoot)
                 {
                     TransitionCell(ref cell, i,
                         def.LowTransitionTargetId,
                         def.LowTransitionOreId,
                         def.LowTransitionOreMassRatio,
-                        def.LowTransitionTemp - REBOUND);
+                        def.LowTransitionTemp - _settings.TransitionRebound);
                 }
             }
         }

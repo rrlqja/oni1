@@ -12,19 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f940cf47b8ee452f9ca920f42f0b852, type: 3}
   m_Name: Oxygen
   m_EditorClassIdentifier: 
-  id: 6
+  id: 10
   elementName: "\uC0B0\uC18C"
   behaviorType: 4
   displacementPriority: 1
   isSolid: 0
   density: 500
   defaultMass: 1000
-  maxMass: 1000
+  maxMass: 2000
   viscosity: 1
-  minSpreadMass: 0
+  minSpreadMass: 50
   baseColor:
     serializedVersion: 2
-    rgba: 4292990140
+    rgba: 4293972660
   lateralRetainMass: 0
   thermalConductivity: 0.024
   specificHeatCapacity: 1.01
@@ -43,6 +43,9 @@ MonoBehaviour:
   liquidSurfaceHighlight: 0.15
   liquidViscosity: 0
   gasCloudScale: 2
-  gasCloudContrast: 1.3
-  gasDriftSpeed: 0.08
-  gasEdgeSoftness: 1.5
+  gasCloudContrast: 1.5
+  gasDriftSpeed: 0.05
+  gasEdgeSoftness: 0.8
+  solidTexture: {fileID: 0}
+  solidTextureScale: 0.25
+  solidCrackStrength: 0.3
